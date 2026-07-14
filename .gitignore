@@ -1,0 +1,14 @@
+# Dependencies are intentionally VENDORED (committed) under node_modules/
+# so the skill runs fully offline at runtime with no `npm install`.
+# Only the two pure-JS runtime packages are kept; everything else ignored.
+node_modules/*
+!node_modules/@noble/
+!node_modules/@noble/secp256k1/
+!node_modules/@noble/secp256k1/*
+!node_modules/bech32/
+!node_modules/bech32/*
+
+# OS / editor noise
+.DS_Store
+*.log
+*.key

@@ -1,0 +1,34 @@
+{
+  "name": "lnurl-auth",
+  "version": "1.1.0",
+  "description": "LNURL-auth (LUD-04) signer for LLM agents",
+  "main": "lnurl_auth.js",
+  "scripts": {
+    "test": "node selftest.js && node test/unit.js"
+  },
+  "keywords": [
+    "lnurl",
+    "lnurl-auth",
+    "lud-04",
+    "lightning",
+    "auth",
+    "login",
+    "secp256k1",
+    "openclaw-skill"
+  ],
+  "author": "Diego \"Amadeo\" Lara",
+  "license": "MIT",
+  "homepage": "https://github.com/dyegolara/openclaw-lnurl-auth",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dyegolara/openclaw-lnurl-auth.git"
+  },
+  "type": "commonjs",
+  "dependencies": {
+    "@noble/secp256k1": "^3.1.0",
+    "bech32": "^2.0.0"
+  },
+  "bin": {
+    "lnurl-auth": "lnurl_auth.js"
+  }
+}
