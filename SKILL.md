@@ -1,8 +1,8 @@
 ---
 name: lnurl-auth
-description: "LNURL-auth (LUD-04) signer for LLM agents. Given an lnurl1... string from a 'Sign in with Lightning' QR/link, decode it, sign the k1 challenge with a secp256k1 linking key, and submit the signature to the service callback — no Lightning node, no payment, no cost. Use whenever a site asks to authenticate via LNURL-auth / Lightning login."
+description: "LNURL-auth (LUD-04) signer for LLM coding agents (OpenClaw, Codex, Cursor, Claude Code, OpenCode, ...). Auth-only login via Lightning — no node, no cost. Given an lnurl1... string from a 'Sign in with Lightning' QR/link, decode it, sign the k1 challenge with a secp256k1 linking key, and submit the signature to the service callback. Use whenever a site asks to authenticate via LNURL-auth / Lightning login."
 license: MIT
-homepage: https://github.com/dyegolara/openclaw-lnurl-auth
+homepage: https://github.com/dyegolara/lnurl-auth-agents
 metadata:
   author: Diego "Amadeo" Lara
   version: 1.1.0

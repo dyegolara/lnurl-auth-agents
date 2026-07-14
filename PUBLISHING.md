@@ -1,6 +1,6 @@
 # Plan de Publicación — `lnurl-auth` (LUD-04)
 
-Skill de LNURL-auth ("Sign in with Lightning") para agentes LLM / OpenClaw.
+Skill / herramienta de LNURL-auth ("Sign in with Lightning") para **cualquier agente LLM coding** (OpenClaw, Codex, Cursor, Claude Code, OpenCode, ...).
 Sin nodo Lightning, sin pago, sin costo. Listo para publicar; ver "Bloqueos"
 al final sobre el paso de GitHub.
 
@@ -20,7 +20,7 @@ al final sobre el paso de GitHub.
   **lightninglogin.live** devolvieron `{"status":"OK"}` (ver sección de pruebas).
 - ⚠️ **Bloqueo GitHub**: el token `gh` autenticado como `dyegolara` NO tiene
   scope para crear repos (403 en `createRepository` y en `POST /user/repos`).
-  No se pudo crear `openclaw-lnurl-auth` ni hacer push con este token.
+  No se pudo crear `lnurl-auth-agents` ni hacer push con este token.
   El repo git local ya está commiteado (26 archivos) y con el remote `origin`
   configurado; falta solo `git push` a un repo que deba existir.
 
@@ -33,11 +33,11 @@ al final sobre el paso de GitHub.
 
 ```bash
 # Opción A — gh con token que SÍ tenga scope de repo:
-gh repo create openclaw-lnurl-auth --public --source . --remote origin --push \
-  --description "LNURL-auth (LUD-04) signer skill for OpenClaw / LLM agents — no Lightning node, no payment, no cost."
+gh repo create lnurl-auth-agents --public --source . --remote origin --push \
+  --description "LNURL-auth (LUD-04) signer for LLM coding agents — no Lightning node, no payment, no cost."
 
 # Opción B — repo ya creado vía github.com UI (estando logueado):
-git remote add origin https://github.com/dyegolara/openclaw-lnurl-auth.git
+git remote add origin https://github.com/dyegolara/lnurl-auth-agents.git
 git push -u origin main
 ```
 
@@ -80,7 +80,7 @@ openclaw skills install lnurl-auth
 ## 4. Otras venues (opcionales)
 
 - **Instalación directa desde git** (sin registro):
-  `openclaw skills install https://github.com/dyegolara/openclaw-lnurl-auth`
+  `openclaw skills install https://github.com/dyegolara/lnurl-auth-agents`
   o bien `git clone` y colocar en `~/.openclaw/.../skills/lnurl-auth/`.
 - **Listar en directorios / awesome-lists** de agent-skills (divulgación).
 - **Plugin de OpenClaw**: el skill ya cumple el esquema esperado
@@ -92,7 +92,8 @@ openclaw skills install lnurl-auth
 
 ## 5. Checklist de requisitos (cumplidos salvo lo bloqueado)
 
-- [x] `SKILL.md` con `name` + `description` (obligatorios)
+- [x] `SKILL.md` con `name` + `description` (obligatorios) — reframeado como
+  herramienta para **cualquier** agente LLM coding, no solo OpenClaw
 - [x] Frontmatter correcto (`license: MIT`, `homepage`, `metadata`)
 - [x] Funciona sin red en runtime (deps vendorizadas; `npm install` documentado)
 - [x] `npm test` pasa (mock + unit con vectores oficiales LUD-01/LUD-04)

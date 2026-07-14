@@ -1,4 +1,4 @@
-# lnurl-auth — LNURL-auth (LUD-04) signer for LLM agents
+# lnurl-auth — LNURL-auth (LUD-04) signer for LLM coding agents
 
 Authenticate to a service using **LNURL-auth** ("Sign in with Lightning")
 **entirely client-side**, with no Lightning node, no payment, and no cost.
@@ -23,8 +23,8 @@ The server verifies the signature and replies `{"status":"OK"}` or
 ## Why
 
 Many Lightning-enabled sites (e.g. bitsimp.com) offer a "Sign in with
-Lightning" button. Normally you scan a QR with a phone wallet. This skill lets
-an **agent** perform the exact same cryptographic handshake from the command
+Lightning" button. Normally you scan a QR with a phone wallet. This tool lets
+an **LLM coding agent** perform the exact same cryptographic handshake from the command
 line — useful for automations, bots, or identity/login flows that must not
 spend money or run a node.
 
