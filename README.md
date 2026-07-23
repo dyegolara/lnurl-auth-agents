@@ -94,6 +94,87 @@ On first use, a 32-byte master secret is generated and saved to
 
 ---
 
+## Agent skill installation
+
+`lnurl-auth` follows the [Agent Skills](https://agentskills.io) open standard. The
+`SKILL.md` file uses YAML frontmatter (`name`, `description`, `license`, `metadata`)
+supported by all major LLM coding agents.
+
+### Claude Code
+
+```bash
+mkdir -p ~/.claude/skills/lnurl-auth
+cp SKILL.md AGENTS.md lnurl_auth.js ~/.claude/skills/lnurl-auth/
+cp -r lib/ ~/.claude/skills/lnurl-auth/
+```
+
+### OpenCode
+
+**Global** (all projects):
+
+```bash
+mkdir -p ~/.config/opencode/skills/lnurl-auth
+cp SKILL.md AGENTS.md lnurl_auth.js ~/.config/opencode/skills/lnurl-auth/
+cp -r lib/ ~/.config/opencode/skills/lnurl-auth/
+```
+
+**Per-project**:
+
+```bash
+mkdir -p .opencode/skills/lnurl-auth
+cp SKILL.md AGENTS.md lnurl_auth.js .opencode/skills/lnurl-auth/
+cp -r lib/ .opencode/skills/lnurl-auth/
+```
+
+### Codex (OpenAI)
+
+```bash
+mkdir -p ~/.codex/skills/lnurl-auth
+ln -sfn "$(pwd)" ~/.codex/skills/lnurl-auth
+```
+
+### OpenClaw
+
+```bash
+mkdir -p ~/.claw/skills/lnurl-auth
+cp SKILL.md AGENTS.md lnurl_auth.js ~/.claw/skills/lnurl-auth/
+cp -r lib/ ~/.claw/skills/lnurl-auth/
+```
+
+### Cursor
+
+```bash
+mkdir -p ~/.cursor/skills/lnurl-auth
+cp SKILL.md AGENTS.md lnurl_auth.js ~/.cursor/skills/lnurl-auth/
+cp -r lib/ ~/.cursor/skills/lnurl-auth/
+```
+
+### Grok Build (xAI)
+
+```bash
+mkdir -p ~/.grok/skills/lnurl-auth
+cp SKILL.md AGENTS.md lnurl_auth.js ~/.grok/skills/lnurl-auth/
+cp -r lib/ ~/.grok/skills/lnurl-auth/
+```
+
+### Hermes Agent (Nous Research)
+
+```bash
+mkdir -p ~/.hermes/skills/lnurl-auth
+cp SKILL.md AGENTS.md lnurl_auth.js ~/.hermes/skills/lnurl-auth/
+cp -r lib/ ~/.hermes/skills/lnurl-auth/
+```
+
+### GitHub Copilot
+
+```bash
+mkdir -p .github/skills/lnurl-auth
+cp SKILL.md AGENTS.md lnurl_auth.js .github/skills/lnurl-auth/
+cp -r lib/ .github/skills/lnurl-auth/
+```
+
+---
+
 ## CLI options
 
 | Option | Description |
