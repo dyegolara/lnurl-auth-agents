@@ -173,6 +173,47 @@ cp SKILL.md AGENTS.md lnurl_auth.js .github/skills/lnurl-auth/
 cp -r lib/ .github/skills/lnurl-auth/
 ```
 
+### MCP (Model Context Protocol)
+
+For maximum compatibility with any MCP-capable agent (Claude Desktop, Cursor,
+Continue, Cody, Zed, and many more):
+
+```bash
+cd mcp && npm install
+```
+
+**Standalone** — add to your MCP client config (e.g. `claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "lnurl-auth": {
+      "command": "node",
+      "args": ["/absolute/path/to/lnurl-auth-agents/mcp/server.js"]
+    }
+  }
+}
+```
+
+**As a plugin** — this repo includes `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`,
+and `.cursor-plugin/plugin.json` manifests. The `SKILL.md` at the repo root acts as a single
+skill. OpenClaw auto-detects Claude-format plugins.
+
+```bash
+# Claude Code
+claude plugins install ./lnurl-auth-agents --link
+
+# OpenClaw (detects Claude bundle automatically)
+openclaw plugins install ./lnurl-auth-agents
+
+# Codex
+codex plugins install --link ./lnurl-auth-agents
+```
+
+This exposes a single tool `lnurl_auth` that accepts an `lnurl` string and optional
+`dry_run`, `single_key`, and `key` parameters — returning the full handshake result
+as structured JSON.
+
 ---
 
 ## CLI options
