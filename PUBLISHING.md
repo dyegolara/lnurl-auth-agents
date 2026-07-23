@@ -46,9 +46,9 @@ jobs:
 
 Optimizar el repositorio para que sea encontrable desde GitHub.
 
-- [ ] Agregar topics al repo: `lnurl`, `lnurl-auth`, `lud-04`, `lightning`, `agent-skill`, `openclaw-skill`, `opencode-skill`, `mcp`
-- [ ] Agregar seccion "About" descriptiva en el repo
-- [ ] Agregar link al sitio web / demo si existe
+- [x] Agregar topics al repo: `lnurl`, `lnurl-auth`, `lud-04`, `lightning`, `agent-skill`, `openclaw-skill`, `opencode-skill`, `mcp`
+- [x] Agregar seccion "About" descriptiva en el repo
+- [x] Agregar link al sitio web / demo si existe
 
 ---
 
@@ -81,9 +81,9 @@ mkdir -p ~/.codex/skills
 ln -sfn "$(pwd)" ~/.codex/skills/lnurl-auth
 ```
 
-- [ ] Agregar instrucciones de instalacion para OpenCode en README.md
-- [ ] Agregar instrucciones de instalacion para Claude Code en README.md
-- [ ] Agregar instrucciones de instalacion para Codex en README.md
+- [x] Agregar instrucciones de instalacion para OpenCode en README.md
+- [x] Agregar instrucciones de instalacion para Claude Code en README.md
+- [x] Agregar instrucciones de instalacion para Codex en README.md
 
 ---
 
@@ -122,10 +122,31 @@ mcp/
 
 La tool recibiria un `lnurl1` string y devolveria el resultado del handshake.
 
-- [ ] Crear `mcp/server.js` con una tool `lnurl_auth`
-- [ ] Crear `mcp/package.json` con `@modelcontextprotocol/sdk`
+- [x] Crear `mcp/server.js` con una tool `lnurl_auth`
+- [x] Crear `mcp/package.json` con `@modelcontextprotocol/sdk`
 - [ ] Probar con Claude Desktop (`claude_desktop_config.json`)
-- [ ] Documentar instalacion en README.md
+- [x] Documentar instalacion en README.md
+
+---
+
+## 5b. Empaquetar como plugin (Claude Code, OpenClaw, Codex, Cursor)
+
+El repo ya tiene estructura compatible con plugins de Claude Code (`.claude-plugin/plugin.json`),
+Codex (`.codex-plugin/plugin.json`) y Cursor (`.cursor-plugin/plugin.json`).
+OpenClaw detecta automaticamente bundles en formato Claude.
+
+El `SKILL.md` en la raiz del repo funciona como skill unico del plugin y
+el `.mcp.json` declara el MCP server integrado.
+
+La skill usa el estandar agentskills.io (YAML frontmatter con `name` + `description`).
+
+- [x] Crear `.claude-plugin/plugin.json` con metadata, skill, MCP server
+- [x] Crear `.codex-plugin/plugin.json` (compatibilidad Codex)
+- [x] Crear `.cursor-plugin/plugin.json` (compatibilidad Cursor)
+- [x] Crear `.mcp.json` en raiz del repo (MCP server integrado)
+- [x] Verificar que el MCP server referenciado funciona
+- [x] Tests de validacion de manifiestos (9 tests en `test/plugin.test.js`)
+- [x] Documentar instalacion como plugin en README.md
 
 ---
 
@@ -182,10 +203,11 @@ lnurl-auth --help
 
 - [x] **0.** Arreglar URLs inconsistentes en package.json
 - [x] **1.** Agregar CI con GitHub Actions
-- [ ] **2.** Optimizar GitHub topics y discoverability
-- [ ] **3.** Documentar instalacion para OpenCode, Claude Code, Codex
+- [x] **2.** Optimizar GitHub topics y discoverability
+- [x] **3.** Documentar instalacion para OpenCode, Claude Code, Codex
 - [ ] **4.** PR a openclaw/agent-skills
-- [ ] **5.** Crear MCP server wrapper
+- [x] **5.** Crear MCP server wrapper
+- [x] **5b.** Empaquetar como plugin multi-plataforma
 - [ ] **6.** Publicar en ClawHub
 - [ ] **7.** Publicar en npm
 

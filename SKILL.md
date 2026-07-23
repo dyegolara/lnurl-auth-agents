@@ -4,7 +4,7 @@ description: "LNURL-auth (LUD-04) signer for LLM coding agents (OpenClaw, Codex,
 license: MIT
 homepage: https://github.com/dyegolara/lnurl-auth-agents
 metadata:
-  author: Diego "Amadeo" Lara
+  author: dyegolara
   version: 1.1.0
   tags: [lnurl, lightning, auth, login, lud-04, secp256k1]
 ---

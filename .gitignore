@@ -8,7 +8,8 @@ node_modules/*
 !node_modules/bech32/
 !node_modules/bech32/*
 
-# OS / editor noise
+# MCP server has its own dependencies — not vendored, installed with `npm install`
+mcp/node_modules/
 .DS_Store
 *.log
 *.key

@@ -16,7 +16,7 @@
     "secp256k1",
     "openclaw-skill"
   ],
-  "author": "Diego \"Amadeo\" Lara",
+  "author": "dyegolara",
   "license": "MIT",
   "homepage": "https://github.com/dyegolara/lnurl-auth-agents",
   "repository": {

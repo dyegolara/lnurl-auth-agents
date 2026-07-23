@@ -94,6 +94,128 @@ On first use, a 32-byte master secret is generated and saved to
 
 ---
 
+## Agent skill installation
+
+`lnurl-auth` follows the [Agent Skills](https://agentskills.io) open standard. The
+`SKILL.md` file uses YAML frontmatter (`name`, `description`, `license`, `metadata`)
+supported by all major LLM coding agents.
+
+### Claude Code
+
+```bash
+mkdir -p ~/.claude/skills/lnurl-auth
+cp SKILL.md AGENTS.md lnurl_auth.js ~/.claude/skills/lnurl-auth/
+cp -r lib/ ~/.claude/skills/lnurl-auth/
+```
+
+### OpenCode
+
+**Global** (all projects):
+
+```bash
+mkdir -p ~/.config/opencode/skills/lnurl-auth
+cp SKILL.md AGENTS.md lnurl_auth.js ~/.config/opencode/skills/lnurl-auth/
+cp -r lib/ ~/.config/opencode/skills/lnurl-auth/
+```
+
+**Per-project**:
+
+```bash
+mkdir -p .opencode/skills/lnurl-auth
+cp SKILL.md AGENTS.md lnurl_auth.js .opencode/skills/lnurl-auth/
+cp -r lib/ .opencode/skills/lnurl-auth/
+```
+
+### Codex (OpenAI)
+
+```bash
+mkdir -p ~/.codex/skills/lnurl-auth
+ln -sfn "$(pwd)" ~/.codex/skills/lnurl-auth
+```
+
+### OpenClaw
+
+```bash
+mkdir -p ~/.claw/skills/lnurl-auth
+cp SKILL.md AGENTS.md lnurl_auth.js ~/.claw/skills/lnurl-auth/
+cp -r lib/ ~/.claw/skills/lnurl-auth/
+```
+
+### Cursor
+
+```bash
+mkdir -p ~/.cursor/skills/lnurl-auth
+cp SKILL.md AGENTS.md lnurl_auth.js ~/.cursor/skills/lnurl-auth/
+cp -r lib/ ~/.cursor/skills/lnurl-auth/
+```
+
+### Grok Build (xAI)
+
+```bash
+mkdir -p ~/.grok/skills/lnurl-auth
+cp SKILL.md AGENTS.md lnurl_auth.js ~/.grok/skills/lnurl-auth/
+cp -r lib/ ~/.grok/skills/lnurl-auth/
+```
+
+### Hermes Agent (Nous Research)
+
+```bash
+mkdir -p ~/.hermes/skills/lnurl-auth
+cp SKILL.md AGENTS.md lnurl_auth.js ~/.hermes/skills/lnurl-auth/
+cp -r lib/ ~/.hermes/skills/lnurl-auth/
+```
+
+### GitHub Copilot
+
+```bash
+mkdir -p .github/skills/lnurl-auth
+cp SKILL.md AGENTS.md lnurl_auth.js .github/skills/lnurl-auth/
+cp -r lib/ .github/skills/lnurl-auth/
+```
+
+### MCP (Model Context Protocol)
+
+For maximum compatibility with any MCP-capable agent (Claude Desktop, Cursor,
+Continue, Cody, Zed, and many more):
+
+```bash
+cd mcp && npm install
+```
+
+**Standalone** — add to your MCP client config (e.g. `claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "lnurl-auth": {
+      "command": "node",
+      "args": ["/absolute/path/to/lnurl-auth-agents/mcp/server.js"]
+    }
+  }
+}
+```
+
+**As a plugin** — this repo includes `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`,
+and `.cursor-plugin/plugin.json` manifests. The `SKILL.md` at the repo root acts as a single
+skill. OpenClaw auto-detects Claude-format plugins.
+
+```bash
+# Claude Code
+claude plugins install ./lnurl-auth-agents --link
+
+# OpenClaw (detects Claude bundle automatically)
+openclaw plugins install ./lnurl-auth-agents
+
+# Codex
+codex plugins install --link ./lnurl-auth-agents
+```
+
+This exposes a single tool `lnurl_auth` that accepts an `lnurl` string and optional
+`dry_run`, `single_key`, and `key` parameters — returning the full handshake result
+as structured JSON.
+
+---
+
 ## CLI options
 
 | Option | Description |
