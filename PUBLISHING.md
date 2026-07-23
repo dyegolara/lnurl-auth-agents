@@ -1,165 +1,75 @@
-# Plan de publicacion -- `lnurl-auth` (LUD-04)
+# Plan de publicacion pendiente — `lnurl-auth` (LUD-04)
 
-Herramienta de LNURL-auth ("Sign in with Lightning") para **cualquier agente LLM**
-(OpenClaw, Codex, Cursor, Claude Code, OpenCode, etc.). Sin nodo Lightning, sin
-pago, sin costo.
-
----
-
-## 0. Preliminares: arreglar referencias inconsistentes
-
-`package.json` apunta a `openclaw-lnurl-auth` pero el repo real es
-`lnurl-auth-agents`. Unificar antes de hacer cualquier otra cosa.
-
-- [x] Corregir `homepage` en `package.json` a `https://github.com/dyegolara/lnurl-auth-agents`
-- [x] Corregir `repository.url` en `package.json` a `https://github.com/dyegolara/lnurl-auth-agents.git`
+Estado pre-publicacion: codigo estable, 151 tests pass, CI configurado, SKILL.md valido,
+plugin manifests listos (`.claude-plugin/`, `.codex-plugin/`, `.cursor-plugin/`),
+MCP server funcional, dependencias vendorizadas, verificado en 2 servicios reales.
 
 ---
 
-## 1. CI/CD -- GitHub Actions
+## 5. openclaw/agent-skills (PR)
 
-Agregar un workflow que corra los tests automaticamente en cada push/PR.
-Da confianza a los consumidores y detecta regresiones.
+Repo: https://github.com/openclaw/agent-skills (950 estrellas, 173 commits)
 
-```yaml
-# .github/workflows/ci.yml
-name: CI
-on: [push, pull_request]
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm test
+### Requisitos
+
+- `skills/<name>/SKILL.md` con YAML frontmatter (`name` + `description`)
+- Workflow portable y reutilizable entre proyectos/agentes
+- Responsabilidad acotada: inputs, outputs, failure modes explicitos
+- Licencia MIT
+- Pasar `scripts/validate-skills`
+- El skill debe ser generico, no atado a un producto especifico (VISION.md)
+
+### Cumplimiento
+
+| Requisito | Estado |
+|---|---|
+| SKILL.md con frontmatter `name` + `description` | ✅ |
+| Workflow portable multi-agente | ✅ |
+| Alcance acotado (LUD-04, auth-only) | ✅ |
+| Licencia MIT | ✅ |
+| Pasar `scripts/validate-skills` | ❌ No verificado |
+| Skill generico (no product-specific) | ✅ |
+
+### Estructura requerida en el PR
+
+```
+skills/lnurl-auth/
+  SKILL.md           # adaptado del SKILL.md actual
+  scripts/           # helpers (lnurl_auth.js, lib/, etc.)
 ```
 
-- [x] Crear `.github/workflows/ci.yml`
-- [ ] Verificar que pasa en GitHub Actions
-- [x] Agregar badge de CI al README.md
-
----
-
-## 2. GitHub Topics y discoverability
-
-Optimizar el repositorio para que sea encontrable desde GitHub.
-
-- [x] Agregar topics al repo: `lnurl`, `lnurl-auth`, `lud-04`, `lightning`, `agent-skill`, `openclaw-skill`, `opencode-skill`, `mcp`
-- [x] Agregar seccion "About" descriptiva en el repo
-- [x] Agregar link al sitio web / demo si existe
-
----
-
-## 3. Compatibilidad nativa con OpenCode, Claude Code y Codex
-
-El `SKILL.md` actual ya cumple con el formato requerido por todas las plataformas
-(YAML frontmatter con `name` + `description`). Solo falta documentar como instalarlo.
-
-OpenCode descubre skills desde `~/.config/opencode/skills/<name>/SKILL.md`
-o `.opencode/skills/<name>/SKILL.md`. Claude Code usa `~/.claude/skills/`.
-Codex usa `~/.codex/skills/`.
-
-```bash
-# OpenCode (global)
-mkdir -p ~/.config/opencode/skills/lnurl-auth
-cp SKILL.md AGENTS.md lnurl_auth.js ~/.config/opencode/skills/lnurl-auth/
-cp -r lib/ ~/.config/opencode/skills/lnurl-auth/
-
-# OpenCode (por proyecto)
-mkdir -p .opencode/skills/lnurl-auth
-cp SKILL.md AGENTS.md lnurl_auth.js .opencode/skills/lnurl-auth/
-cp -r lib/ .opencode/skills/lnurl-auth/
-
-# Claude Code
-mkdir -p ~/.claude/skills
-ln -sfn "$(pwd)" ~/.claude/skills/lnurl-auth
-
-# Codex
-mkdir -p ~/.codex/skills
-ln -sfn "$(pwd)" ~/.codex/skills/lnurl-auth
-```
-
-- [x] Agregar instrucciones de instalacion para OpenCode en README.md
-- [x] Agregar instrucciones de instalacion para Claude Code en README.md
-- [x] Agregar instrucciones de instalacion para Codex en README.md
-
----
-
-## 4. Contribuir al repo canonico de skills compartidas
-
-Repo oficial de la comunidad OpenClaw: https://github.com/openclaw/agent-skills
-(949 estrellas, 170+ commits). Es la fuente canonica de skills reusables.
-
-Agregar `lnurl-auth` en `skills/lnurl-auth/SKILL.md` y abrir un PR.
-
-Esto daria:
-- Instalacion via `scripts/install-skills lnurl-auth`
-- Visibilidad en la comunidad OpenClaw
-- Compatibilidad automatica con Codex, Claude Code, OpenCode
+### Acciones
 
 - [ ] Fork/clonar https://github.com/openclaw/agent-skills
-- [ ] Agregar `skills/lnurl-auth/SKILL.md` con el contenido actual
-- [ ] Abrir PR con descripcion clara del skill
-- [ ] Responder a feedback del code review
+- [ ] Reestructurar: `skills/lnurl-auth/SKILL.md` + `scripts/` con helpers
+- [ ] Validar con `scripts/validate-skills`
+- [ ] Abrir PR
 
 ---
 
-## 5. MCP Server wrapper -- maxima compatibilidad
+## 6. skills.sh (Vercel Agent Skills Directory)
 
-Crear un wrapper MCP (Model Context Protocol) que exponga una tool `lnurl_auth`.
-Esto haria el skill usable desde **cualquier** agente con soporte MCP:
-Claude Desktop, Cursor, Continue, Cody, Zed, etc.
+Directorio: https://skills.sh (982k+ installs, 20+ agentes). Indexa automaticamente
+repos publicos de GitHub que tengan `skills.sh.json`.
 
-Estructura sugerida:
+### Requisitos
 
-```
-mcp/
-  server.js          # MCP server (stdio transport)
-  package.json       # dependencia: @modelcontextprotocol/sdk
-```
+- `skills.sh.json` en raiz del repo con schema y array `skills`
+- Repo publico en GitHub
+- SKILL.md con frontmatter agentskills.io
+- Instalacion via `npx skills add dyegolara/lnurl-auth-agents`
 
-La tool recibiria un `lnurl1` string y devolveria el resultado del handshake.
+### Cumplimiento
 
-- [x] Crear `mcp/server.js` con una tool `lnurl_auth`
-- [x] Crear `mcp/package.json` con `@modelcontextprotocol/sdk`
-- [ ] Probar con Claude Desktop (`claude_desktop_config.json`)
-- [x] Documentar instalacion en README.md
+| Requisito | Estado |
+|---|---|
+| `skills.sh.json` en raiz | ❌ **NO EXISTE** |
+| Repo publico | ✅ |
+| SKILL.md agentskills.io | ✅ |
 
----
-
-## 5b. Empaquetar como plugin (Claude Code, OpenClaw, Codex, Cursor)
-
-El repo ya tiene estructura compatible con plugins de Claude Code (`.claude-plugin/plugin.json`),
-Codex (`.codex-plugin/plugin.json`) y Cursor (`.cursor-plugin/plugin.json`).
-OpenClaw detecta automaticamente bundles en formato Claude.
-
-El `SKILL.md` en la raiz del repo funciona como skill unico del plugin y
-el `.mcp.json` declara el MCP server integrado.
-
-La skill usa el estandar agentskills.io (YAML frontmatter con `name` + `description`).
-
-- [x] Crear `.claude-plugin/plugin.json` con metadata, skill, MCP server
-- [x] Crear `.codex-plugin/plugin.json` (compatibilidad Codex)
-- [x] Crear `.cursor-plugin/plugin.json` (compatibilidad Cursor)
-- [x] Crear `.mcp.json` en raiz del repo (MCP server integrado)
-- [x] Verificar que el MCP server referenciado funciona
-- [x] Tests de validacion de manifiestos (9 tests en `test/plugin.test.js`)
-- [x] Documentar instalacion como plugin en README.md
-
----
-
-## 6. Publicar en skills.sh (Vercel Agent Skills Directory)
-
-Directorio publico de agent skills: https://skills.sh
-(980k+ installs, 20+ agentes compatibles, indexa automaticamente repos de GitHub)
-
-Para listar un skill se necesita `skills.sh.json` en la raiz del repo con metadatos
-de catalogo. El directorio indexa automaticamente repos publicos de GitHub.
+### Archivo faltante
 
 ```json
-// skills.sh.json
 {
   "$schema": "https://skills.sh/schemas/skills.sh.schema.json",
   "skills": [
@@ -172,147 +82,183 @@ de catalogo. El directorio indexa automaticamente repos publicos de GitHub.
 }
 ```
 
-- [ ] Crear `skills.sh.json` en raiz del repo
+### Acciones
+
+- [ ] Crear `skills.sh.json` con el contenido de arriba
+- [ ] `git add skills.sh.json && git commit && git push`
 - [ ] Verificar en https://skills.sh/dyegolara/lnurl-auth-agents
 
 ---
 
-## 7. Publicar en anthropics/skills (164k estrellas)
+## 7. anthropics/skills (164k estrellas)
 
-Repo canonico de skills de Anthropic: https://github.com/anthropics/skills
-PR-based, cada skill en `skills/<name>/SKILL.md`.
+Repo: https://github.com/anthropics/skills — PR-based, cada skill en `skills/<name>/SKILL.md`.
 
-Agregar `skills/lnurl-auth/SKILL.md` con el contenido actual y abrir PR.
+### Requisitos
+
+- PR con `skills/<skill-name>/SKILL.md` + frontmatter YAML (`name`, `description`)
+- Skills demostrativas/educativas (no esperan codigo ejecutable completo)
+- Formato agentskills.io
+
+### Evaluacion de encaje
+
+⚠️ Este repo aloja SKILL.md puro (instrucciones para Claude). No incluye codigo
+ejecutable, tests, ni MCP servers. Publicar aqui solo aportaria visibilidad del
+SKILL.md como documentacion, no la herramienta completa.
+
+### Acciones
 
 - [ ] Fork/clonar https://github.com/anthropics/skills
-- [ ] Agregar `skills/lnurl-auth/SKILL.md` con el contenido actual
-- [ ] Abrir PR con descripcion clara
+- [ ] Agregar `skills/lnurl-auth/SKILL.md` (solo el markdown, sin codigo)
+- [ ] Abrir PR
 
 ---
 
-## 8. Publicar en Claude Community Marketplace
+## 8. Claude Community Marketplace
 
-Marketplace oficial de plugins de Claude Code:
-https://github.com/anthropics/claude-plugins-community
+Marketplace oficial: https://platform.claude.com/plugins/submit
+Requiere cuenta en Anthropic Console (Team/Enterprise o individual).
 
-Submission via formulario en claude.ai o platform.claude.com.
-Requiere Team/Enterprise org o cuenta individual via Console.
-El repo ya tiene `.claude-plugin/plugin.json` listo.
+### Requisitos tecnicos ya cubiertos
 
+- `.claude-plugin/plugin.json` con metadata completa + mcpServers ✅
+- `SKILL.md` en raiz del repo ✅
+- `.mcp.json` declarando MCP server integrado ✅
+- MCP server funcional (`mcp/server.js`) ✅
+
+### Acciones
+
+- [ ] Crear cuenta en https://console.anthropic.com (si no existe)
 - [ ] Submit via https://platform.claude.com/plugins/submit
 - [ ] Verificar en el community catalog
 
 ---
 
-## 9. Publicar en HuggingFace skills
+## 9. HuggingFace skills — DESCARTADO
 
-Repo de skills del ecosistema HF: https://github.com/huggingface/skills
+Repo: https://github.com/huggingface/skills (10.9k estrellas, 326 commits)
 
-- [ ] Fork/clonar https://github.com/huggingface/skills
-- [ ] Agregar `skills/lnurl-auth/SKILL.md`
-- [ ] Abrir PR
-
----
-
-## 10. Publicar en NVIDIA/skills
-
-Repo de skills verificados por NVIDIA: https://github.com/NVIDIA/skills
-Requiere skill firmada (`skill.oms.sig`) + governance card (`skill-card.md`).
-
-- [ ] Evaluar requisitos de firma y governance
-- [ ] Abrir PR si aplica
+**Motivo:** todos los skills en este repo giran alrededor del ecosistema Hugging Face
+(Hub, transformers, datasets, gradio, SageMaker, spaces). Un skill de autenticacion
+LNURL-auth/Lightning no tiene relacion con el ecosistema HF. PR seria rechazado.
 
 ---
 
-## 11. Publicar en npm
+## 10. NVIDIA/skills — DESCARTADO
 
-`package.json` ya tiene `"bin": {"lnurl-auth": "lnurl_auth.js"}`.
-Publicar en npm permite `npm i -g lnurl-auth`.
+Repo: https://github.com/NVIDIA/skills (2.7k estrellas, 448 commits)
 
-```bash
-npm login
-npm publish
+**Motivos:**
+
+- Es exclusivo para equipos internos de NVIDIA con skills de productos NVIDIA
+- Requiere firma criptografica `skill.oms.sig` (sistema OMS propietario de NVIDIA)
+- Requiere `skill-card.md` (governance card)
+- Licencia debe ser Apache 2.0 / CC-BY 4.0 (nosotros: MIT)
+- Requiere IP review interno de NVIDIA (6 pasos)
+- Requiere security scanning con SkillSpector
+- Requiere commit sign-off (DCO)
+- El skill no es de un producto NVIDIA
+
+No hay camino viable para un contribuidor externo.
+
+---
+
+## 11. npm
+
+### Requisitos
+
+- `package.json` con `name`, `version`, `description`, `license`, `repository`, `bin`
+- `files` field para controlar que se publica
+- `npm login` (cuenta en npmjs.com)
+- `npm publish`
+
+### Cumplimiento
+
+| Requisito | Estado |
+|---|---|
+| `package.json` con campos obligatorios | ✅ |
+| `bin: { "lnurl-auth": "lnurl_auth.js" }` | ✅ |
+| Shebang `#!/usr/bin/env node` | ✅ |
+| README.md, LICENSE | ✅ |
+| `files` field en package.json | ❌ No definido |
+| npm account | ❌ Pendiente |
+
+### Gap: campo `files`
+
+Sin `files`, `npm pack` incluye archivos innecesarios (PUBLISHING.md, test/,
+vitest.config.js, mock_server.js, .claude-plugin/, .codex-plugin/, .cursor-plugin/,
+mcp/package-lock.json, AGENTS.md).
+
+Agregar a `package.json`:
+
+```json
+"files": [
+  "lnurl_auth.js",
+  "lib/",
+  "mcp/server.js",
+  "mcp/package.json",
+  "SKILL.md",
+  "README.md",
+  "LICENSE"
+]
 ```
 
-Verificacion:
-```bash
-npm info lnurl-auth
-npm i -g lnurl-auth
-lnurl-auth --help
-```
+### Acciones
 
-- [ ] `npm login` (requiere cuenta en npmjs.com)
+- [ ] Agregar campo `files` a `package.json`
+- [ ] `npm login` (crear cuenta en https://npmjs.com si no existe)
 - [ ] `npm publish`
-- [ ] Verificar que `npm i -g lnurl-auth` funciona
+- [ ] Verificar: `npm i -g lnurl-auth && lnurl-auth --help`
 
 ---
 
-## 12. Publicar en ClawHub
+## 12. ClawHub
 
-Registro publico de skills y plugins: https://clawhub.ai
-(30+ skills, 12+ plugins, marketplace principal del ecosistema OpenClaw)
+Registro: https://clawhub.ai (30+ skills, 12+ plugins). Marketplace del ecosistema
+OpenClaw. Auto-detecta bundles en formato Claude.
 
-```bash
-npm i -g clawhub
-clawhub login
-clawhub whoami
-clawhub skill publish . --version 1.1.0
-```
+### Requisitos
 
-Verificacion post-publicacion:
-```bash
-openclaw skills search lnurl-auth
-openclaw skills verify lnurl-auth
-openclaw skills install lnurl-auth
-```
+- SKILL.md con frontmatter agentskills.io
+- `.claude-plugin/plugin.json` (OpenClaw lo detecta automaticamente)
+- MCP server integrado
+- `clawhub` CLI: `npm i -g clawhub && clawhub login`
 
-- [ ] Instalar `clawhub` CLI
-- [ ] `clawhub login` (requiere cuenta en ClawHub)
+### Cumplimiento
+
+| Requisito | Estado |
+|---|---|
+| SKILL.md agentskills.io | ✅ |
+| `.claude-plugin/plugin.json` | ✅ |
+| `.mcp.json` + MCP server | ✅ |
+| `clawhub` CLI instalado | ❌ Pendiente |
+| Cuenta ClawHub | ❌ Pendiente |
+
+### Acciones
+
+- [ ] `npm i -g clawhub`
+- [ ] `clawhub login` (crear cuenta en https://clawhub.ai si no existe)
 - [ ] `clawhub skill publish . --version 1.1.0`
-- [ ] Verificar que aparece en https://clawhub.ai/skills
+- [ ] Verificar: `openclaw skills search lnurl-auth`
 
 ---
 
-## Checklist general de publicacion
+## Checklist final
 
-- [x] **0.** Arreglar URLs inconsistentes en package.json
-- [x] **1.** Agregar CI con GitHub Actions
-- [x] **2.** Optimizar GitHub topics y discoverability
-- [x] **3.** Documentar instalacion para 8 plataformas en README
-- [x] **4.** Crear MCP server wrapper
-- [x] **4b.** Empaquetar como plugin multi-plataforma
-- [ ] **5.** PR a openclaw/agent-skills
-- [ ] **6.** Publicar en skills.sh
-- [ ] **7.** PR a anthropics/skills (164k estrellas)
-- [ ] **8.** Publicar en Claude Community Marketplace
-- [ ] **9.** PR a huggingface/skills
-- [ ] **10.** PR a NVIDIA/skills
-- [ ] **11.** Publicar en npm
-- [ ] **12.** Publicar en ClawHub
+- [ ] **5.** PR a openclaw/agent-skills — requiere reestructuracion + validacion
+- [ ] **6.** skills.sh — crear `skills.sh.json` (~10 lineas) y push
+- [ ] **7.** PR a anthropics/skills — solo SKILL.md, sin codigo
+- [ ] **8.** Claude Community Marketplace — submit en platform.claude.com
+- [ ] ~~**9.** HuggingFace~~ — descartado (no encaja en ecosistema HF)
+- [ ] ~~**10.** NVIDIA~~ — descartado (exclusivo interno NVIDIA)
+- [ ] **11.** npm — agregar `files` a package.json + `npm publish`
+- [ ] **12.** ClawHub — `clawhub login` + `clawhub skill publish`
 
----
+### Orden recomendado
 
-## Estado actual del skill (pre-publicacion)
-
-- [x] Codigo estable con 5 bugs corregidos (code review)
-- [x] Tests: `npm test` = 151/151 PASS (9 suites)
-- [x] `SKILL.md` con frontmatter valido (`name`, `description`, `license`, `homepage`, `metadata`)
-- [x] Dependencias vendorizadas en `node_modules/` (offline-capable)
-- [x] Documentacion completa: `README.md`, `SKILL.md`, `AGENTS.md`
-- [x] `LICENSE` (MIT), `examples/`
-- [x] Login real verificado en bitsimp.com y lightninglogin.live (status OK)
-- [x] Repo en GitHub: https://github.com/dyegolara/lnurl-auth-agents
-- [x] Plugin manifests: `.claude-plugin/`, `.codex-plugin/`, `.cursor-plugin/`
-
----
-
-## Evidencia de pruebas reales
-
-| Servicio | Resultado | Respuesta |
-|---|---|---|
-| bitsimp.com | Exito | `HTTP 200 {"status":"OK","success":true}` |
-| lightninglogin.live | Exito | `HTTP 200 {"status":"OK"}` |
-
-Metodo: se navego el sitio, se pulso "Sign in with Lightning", se capturo el
-`lnurl1...` del enlace "Open Lightning Wallet", y se ejecuto
-`node lnurl_auth.js <lnurl1>`. Ambos cerraron el handshake con `status: OK`.
+1. **npm** (11) — maximo alcance, minima friccion (1 campo JSON + publish)
+2. **skills.sh** (6) — 1 archivo nuevo, indexacion automatica
+3. **ClawHub** (12) — sin cambios de codigo, solo CLI
+4. **Claude Marketplace** (8) — requiere cuenta Anthropic pero sin cambios tecnicos
+5. **openclaw/agent-skills** (5) — requiere reestructuracion de archivos
+6. **anthropics/skills** (7) — visibilidad limitada (solo doc, no herramienta)
