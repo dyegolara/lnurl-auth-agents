@@ -3,7 +3,7 @@
   "displayName": "LNURL Auth",
   "version": "1.1.0",
   "description": "LNURL-auth (LUD-04) — Sign in with Lightning for LLM agents. No wallet, no node, no payment required.",
-  "author": "Diego \"Amadeo\" Lara",
+  "author": "dyegolara",
   "homepage": "https://github.com/dyegolara/lnurl-auth-agents",
   "repository": "https://github.com/dyegolara/lnurl-auth-agents",
   "license": "MIT"
