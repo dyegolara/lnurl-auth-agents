@@ -9,4 +9,5 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
+      - run: npm ci --prefix mcp
       - run: npm test
