@@ -163,26 +163,26 @@ All tests are **offline**, cost-free, and require no Lightning node.
 
 ### What the tests cover
 
-```
-selftest.js (mock server):
-  Happy-path sign → submit → verify roundtrip
-  Replay protection (k1 consumed after first use)
-  Dry-run does not consume the challenge
-  Tampered k1 rejected by server
-  Per-domain linking key is stable across invocations
-  --generate properly overwrites existing keyfile
-  Odd-length hex k1 is rejected (no silent corruption)
+**`selftest.js`** (mock server — 14 tests)
 
-test/unit.js (offline):
-  bech32 roundtrip (random URL)
-  bech32 official LUD-01 vector
-  DER encode/decode roundtrip
-  LUD-04 official signature vector verification
-  LUD-04 official vector fails on tampered k1
-  sign → DER → verify full roundtrip with fresh key
-  Per-domain HMAC key derivation (deterministic + isolated)
-  Compressed pubkey is exactly 33 bytes
-```
+- Happy-path sign → submit → verify roundtrip
+- Replay protection (k1 consumed after first use)
+- Dry-run does not consume the challenge
+- Tampered k1 rejected by server
+- Per-domain linking key is stable across invocations
+- `--generate` properly overwrites existing keyfile
+- Odd-length hex k1 is rejected (no silent corruption)
+
+**`test/unit.js`** (offline — 8 tests)
+
+- bech32 roundtrip (random URL)
+- bech32 official LUD-01 vector
+- DER encode/decode roundtrip
+- LUD-04 official signature vector verification
+- LUD-04 official vector fails on tampered k1
+- sign → DER → verify full roundtrip with fresh key
+- Per-domain HMAC key derivation (deterministic + isolated)
+- Compressed pubkey is exactly 33 bytes
 
 ---
 
@@ -226,6 +226,12 @@ no native compilation, no network at runtime.
 - Submitting a login requires network egress to the service's callback URL
   (the only external HTTP call; still no payment, no node).
 - Only short-form DER encoding is supported (valid for all secp256k1 signatures).
+
+---
+
+## Contributing
+
+Contributions are welcome! See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 
 ---
 
