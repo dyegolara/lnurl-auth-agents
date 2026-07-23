@@ -1,93 +1,150 @@
 # lnurl-auth — LNURL-auth (LUD-04) signer for LLM coding agents
 
-Authenticate to a service using **LNURL-auth** ("Sign in with Lightning")
-**entirely client-side**, with no Lightning node, no payment, and no cost.
+Authenticate to any LNURL-auth service ("Sign in with Lightning") **entirely
+client-side** — no Lightning node, no wallet, no payment, no cost.
 
-Given an `lnurl1...` string (from a QR code, a link, or pasted text), the tool:
+Given an `lnurl1...` string (from a QR code, a link, or pasted text), the tool
+performs the cryptographic handshake that a Lightning wallet would, returning
+the server's `{"status":"OK"}` or `{"status":"ERROR","reason":"..."}`.
 
-1. decodes the `lnurl1...` (bech32) into the service URL, which carries a
-   32-byte `k1` hex challenge and an optional `action`;
-2. derives (or loads) a per-service **linking key** from a local master secret;
-3. signs the **raw 32-byte `k1`** with that key using ECDSA (secp256k1) and
-   **DER-encodes** the signature (as LUD-04 requires);
-4. issues a `GET` to the service callback with
-   `&sig=<hex DER sig>&key=<hex compressed pubkey>` (and `&t=<action>`).
-
-The server verifies the signature and replies `{"status":"OK"}` or
-`{"status":"ERROR","reason":...}`. There is no invoice and no Lightning node.
-
-> Reference: [LUD-04 (auth base spec)](https://github.com/lnurl/luds/blob/luds/04.md)
+Reference: [LUD-04 (auth base spec)](https://github.com/lnurl/luds/blob/luds/04.md)
 
 ---
 
-## Why
+## How it works
 
-Many Lightning-enabled sites (e.g. bitsimp.com) offer a "Sign in with
-Lightning" button. Normally you scan a QR with a phone wallet. This tool lets
-an **LLM coding agent** perform the exact same cryptographic handshake from the command
-line — useful for automations, bots, or identity/login flows that must not
-spend money or run a node.
+```mermaid
+sequenceDiagram
+    actor Agent as LLM Agent
+    participant CLI as lnurl_auth.js
+    participant Disk as ~/.config/lnurl-auth/
+    participant Service as LNURL Service
+
+    Agent->>CLI: node lnurl_auth.js <lnurl1...>
+    CLI->>CLI: 1. Decode bech32 → service URL (k1, action)
+    CLI->>Disk: 2. Load or generate master secret
+    Disk-->>CLI: 32-byte master key
+
+    alt per-domain (default)
+        CLI->>CLI: HMAC-SHA256(master, domain) → linking key
+    else --single-key
+        CLI->>CLI: use master directly
+    end
+
+    CLI->>CLI: 3. Sign raw k1 with secp256k1 → DER signature
+    CLI->>Service: GET <callback>?k1=...&sig=<hex DER>&key=<hex pub>&t=login
+    Service-->>CLI: {"status":"OK"} or {"status":"ERROR","reason":"..."}
+    CLI-->>Agent: exit 0 / 3 (OK / ERROR)
+```
+
+### Key derivation architecture
+
+```mermaid
+flowchart LR
+    subgraph "One-time setup"
+        MS["master secret\n32 bytes\n~/.config/lnurl-auth/master.key\n(mode 0600)"]
+    end
+
+    subgraph "Per-service derivation"
+        MS -->|"HMAC-SHA256(master, 'bitsimp.com')"| KBitsimp["linking key A\n32 bytes"]
+        MS -->|"HMAC-SHA256(master, 'lightninglogin.live')"| KLL["linking key B\n32 bytes"]
+    end
+
+    KBitsimp -->|"secp256k1 sign(k1)"| SigA["DER signature"]
+    KLL -->|"secp256k1 sign(k1)"| SigB["DER signature"]
+```
+
+The same service always sees the same key (returning user), but different
+services see different keys — privacy-preserving, in the spirit of LUD-05/LUD-13.
+Use `--single-key` to share one key across all services.
+
+---
 
 ## Requirements
 
-- `node` v18+ (v24 works).
-- Two pure-JS npm packages, already **vendored** under `node_modules/`
-  (so it works offline):
-  - `@noble/secp256k1`
-  - `bech32`
+- **Node.js v18+** (v22 recommended).
+- All dependencies are **vendored** in `node_modules/` — works offline at runtime.
+  - [`@noble/secp256k1`](https://github.com/paulmillr/noble-secp256k1) (audited, zero-dependency ECDSA)
+  - [`bech32`](https://github.com/bitcoinjs/bech32) (lnurl decode/encode)
+- To refresh vendored deps: `npm install`.
 
-  To refresh them: `npm install`.
+---
 
-## Usage
+## Quick start
 
 ```bash
-# Decode + sign + submit in one step (service URL comes from the lnurl1):
-node lnurl_auth.js --lnurl <lnurl1...>
+# Clone the repo
+git clone https://github.com/dyegolara/lnurl-auth-agents
+cd lnurl-auth-agents
 
-# Or pass the lnurl positionally:
+# Authenticate with an lnurl1 string
 node lnurl_auth.js <lnurl1...>
 
-# Dry-run: decode, derive key, sign — but do NOT submit the callback.
+# Dry-run (decode, sign, but don't submit)
 node lnurl_auth.js <lnurl1...> --dry-run
 
-# Machine-readable output:
+# Machine-readable output
 node lnurl_auth.js <lnurl1...> --json
 ```
 
-### Key management (privacy-preserving, default)
+On first use, a 32-byte master secret is generated and saved to
+`~/.config/lnurl-auth/master.key` (mode `0600`).
 
-- On first use a 32-byte **master secret** is generated once and persisted at
-  `~/.config/lnurl-auth/master.key` (mode `0600`).
-- For each service a **linking key** is derived deterministically as
-  `linkingPriv = HMAC-SHA256(master, serviceDomain)`, so the *same* service
-  always sees the *same* key (the server can recognise the returning user)
-  while *different* services see different keys (privacy — matches the intent
-  of LUD-05 / LUD-13). Use `--single-key` for one global linking key.
+---
 
-### Useful options
+## CLI options
 
-| Option | Meaning |
+| Option | Description |
 |---|---|
-| `--lnurl <str>` | The `lnurl1...` string (or pass it positionally). |
-| `--key <hex>` | Use this hex private key as the master secret. |
-| `--keyfile <path>` | Read the master secret (hex) from a file. |
-| `--keyout <path>` | Where to persist a generated master secret. |
-| `--generate` | Force-generate a new master secret and persist it. |
-| `--single-key` | Use ONE global linking key for every service. |
-| `--no-t` | Do not append `&t=<action>` to the callback. |
-| `--action <a>` | Assert/override action: `register\|login\|link\|auth`. |
-| `--callback <url>` | Override the URL the signature is submitted to. |
-| `--dry-run` | Decode, fetch `k1`, sign — but **do not** submit. |
-| `--json` | Emit machine-readable JSON. |
-| `-v/-q/-h` | verbose / quiet / help. |
+| `--lnurl <str>` | The `lnurl1...` string (or pass it positionally) |
+| `--key <hex>` | Use this hex private key as the master secret |
+| `--keyfile <path>` | Read the master secret (hex) from a file |
+| `--keyout <path>` | Where to persist a generated master secret (default: `~/.config/lnurl-auth/master.key`) |
+| `--generate` | Force-generate a new master secret, **overwriting** any existing keyfile |
+| `--single-key` | Use one global linking key for all services (no per-domain derivation) |
+| `--no-t` | Omit `&t=<action>` from the callback URL |
+| `--action <a>` | Assert/override action: `register`, `login`, `link`, or `auth` |
+| `--callback <url>` | Override the URL the signature is submitted to |
+| `--dry-run` | Decode, fetch `k1`, sign — but **do not** submit the callback |
+| `--json` | Emit machine-readable JSON to stdout |
+| `-v`, `--verbose` | Verbose logging |
+| `-q`, `--quiet` | Suppress progress logs (stderr) |
+| `-h`, `--help` | Show usage |
+
+---
+
+## Programmatic usage
+
+```js
+const { decodeLnurl } = require('lnurl-auth/lib/bech32');
+const { genPrivateKey, getPublicKey, signCompact, deriveLinkingKey } = require('lnurl-auth/lib/secp');
+const { encode } = require('lnurl-auth/lib/der');
+
+const serviceUrl = decodeLnurl(lnurl);
+const domain = new URL(serviceUrl).hostname;
+const master = genPrivateKey(); // or load from keyfile
+const linkingPriv = deriveLinkingKey(master, domain);
+const pub = getPublicKey(linkingPriv, true);
+
+const k1 = new URL(serviceUrl).searchParams.get('k1');
+const k1Bytes = Buffer.from(k1, 'hex');
+const compact = signCompact(k1Bytes, linkingPriv);
+const derSigHex = Buffer.from(encode(compact)).toString('hex');
+
+// GET <serviceUrl>&sig=<derSigHex>&key=<pub key>
+```
+
+See [`examples/programmatic.js`](./examples/programmatic.js) for a full example.
+
+---
 
 ## Examples
 
-See [`examples/`](./examples):
-
 - [`examples/login.sh`](./examples/login.sh) — full dry-run → real login flow.
-- [`examples/programmatic.js`](./examples/programmatic.js) — call the lib
-  functions from your own Node script.
+- [`examples/programmatic.js`](./examples/programmatic.js) — call the library
+  functions from your own Node.js script.
+
+---
 
 ## Tests
 
@@ -95,27 +152,81 @@ See [`examples/`](./examples):
 npm test
 ```
 
-Runs:
+All tests are **offline**, cost-free, and require no Lightning node.
 
-- `selftest.js` — spins up a local mock "Sign in with Lightning" server and
-  proves the whole sign → submit → verify roundtrip (happy path, replay
-  rejection, dry-run safety, tampered-`k1` rejection, stable per-domain key).
-- `test/unit.js` — unit tests: bech32 roundtrip (incl. the canonical LUD-01
-  vector), DER encode/decode, deterministic per-domain HMAC key derivation,
-  and the **official LUD-04 signature vector** (sign/verify).
+| Suite | What it tests | Count |
+|---|---|---|
+| `selftest.js` | End-to-end roundtrip against a local mock LUD-04 server | 14 tests |
+| `test/unit.js` | bech32, DER, secp256k1, key derivation, official vectors | 8 tests |
 
-All tests are offline, cost-free, and need no Lightning node.
+### What the tests cover
+
+```
+selftest.js (mock server):
+  Happy-path sign → submit → verify roundtrip
+  Replay protection (k1 consumed after first use)
+  Dry-run does not consume the challenge
+  Tampered k1 rejected by server
+  Per-domain linking key is stable across invocations
+  --generate properly overwrites existing keyfile
+  Odd-length hex k1 is rejected (no silent corruption)
+
+test/unit.js (offline):
+  bech32 roundtrip (random URL)
+  bech32 official LUD-01 vector
+  DER encode/decode roundtrip
+  LUD-04 official signature vector verification
+  LUD-04 official vector fails on tampered k1
+  sign → DER → verify full roundtrip with fresh key
+  Per-domain HMAC key derivation (deterministic + isolated)
+  Compressed pubkey is exactly 33 bytes
+```
+
+---
+
+## Real-world verification
+
+| Service | Result | Response |
+|---|---|---|
+| [bitsimp.com](https://bitsimp.com) | Success | `HTTP 200 {"status":"OK","success":true}` |
+| [lightninglogin.live](https://lightninglogin.live) | Success | `HTTP 200 {"status":"OK"}` |
+
+---
+
+## Dependencies
+
+```mermaid
+flowchart TD
+    lnurl_auth.js --> bech32[lib/bech32.js]
+    lnurl_auth.js --> secp[lib/secp.js]
+    lnurl_auth.js --> der[lib/der.js]
+
+    bech32 --> bech32_pkg["bech32 (npm)"]
+    secp --> noble["@noble/secp256k1 (npm)"]
+    der --> noble
+
+    style bech32_pkg fill:#f9f,stroke:#333
+    style noble fill:#f9f,stroke:#333
+```
+
+Both npm packages are pure JavaScript and **vendored** in `node_modules/` —
+no native compilation, no network at runtime.
+
+---
 
 ## Limitations
 
 - This performs the cryptographic login handshake; whether the *account* is
-  created/logged-in depends on the remote service recognising the key.
-- The default linking key is per-domain derived from a **local** master secret;
-  it is **not** the same identity a user's phone wallet would use (those follow
-  LUD-05 BIP32 / LUD-13 from the user's seed). That is fine for agent auth.
+  created/logged-in depends on the remote service recognising the derived key.
+- The default linking key is derived from a **local** master secret; it is
+  **not** the same identity a user's phone wallet would use (those follow
+  LUD-05 BIP32 / LUD-13 from the wallet seed). That is fine for agent auth.
 - Submitting a login requires network egress to the service's callback URL
-  (the only external call; still no payment / no node).
+  (the only external HTTP call; still no payment, no node).
+- Only short-form DER encoding is supported (valid for all secp256k1 signatures).
+
+---
 
 ## License
 
-MIT — see [LICENSE](./LICENSE).
+MIT — see [LICENSE](./LICENSE)
