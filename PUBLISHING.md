@@ -36,9 +36,9 @@ jobs:
       - run: npm test
 ```
 
-- [ ] Crear `.github/workflows/ci.yml`
+- [x] Crear `.github/workflows/ci.yml`
 - [ ] Verificar que pasa en GitHub Actions
-- [ ] Agregar badge de CI al README.md
+- [x] Agregar badge de CI al README.md
 
 ---
 
@@ -181,7 +181,7 @@ lnurl-auth --help
 ## Checklist general de publicacion
 
 - [x] **0.** Arreglar URLs inconsistentes en package.json
-- [ ] **1.** Agregar CI con GitHub Actions
+- [x] **1.** Agregar CI con GitHub Actions
 - [ ] **2.** Optimizar GitHub topics y discoverability
 - [ ] **3.** Documentar instalacion para OpenCode, Claude Code, Codex
 - [ ] **4.** PR a openclaw/agent-skills
