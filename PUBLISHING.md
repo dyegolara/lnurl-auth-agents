@@ -11,8 +11,8 @@ pago, sin costo.
 `package.json` apunta a `openclaw-lnurl-auth` pero el repo real es
 `lnurl-auth-agents`. Unificar antes de hacer cualquier otra cosa.
 
-- [ ] Corregir `homepage` en `package.json` a `https://github.com/dyegolara/lnurl-auth-agents`
-- [ ] Corregir `repository.url` en `package.json` a `https://github.com/dyegolara/lnurl-auth-agents.git`
+- [x] Corregir `homepage` en `package.json` a `https://github.com/dyegolara/lnurl-auth-agents`
+- [x] Corregir `repository.url` en `package.json` a `https://github.com/dyegolara/lnurl-auth-agents.git`
 
 ---
 
@@ -180,7 +180,7 @@ lnurl-auth --help
 
 ## Checklist general de publicacion
 
-- [ ] **0.** Arreglar URLs inconsistentes en package.json
+- [x] **0.** Arreglar URLs inconsistentes en package.json
 - [ ] **1.** Agregar CI con GitHub Actions
 - [ ] **2.** Optimizar GitHub topics y discoverability
 - [ ] **3.** Documentar instalacion para OpenCode, Claude Code, Codex

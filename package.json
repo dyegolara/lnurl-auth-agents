@@ -18,10 +18,10 @@
   ],
   "author": "Diego \"Amadeo\" Lara",
   "license": "MIT",
-  "homepage": "https://github.com/dyegolara/openclaw-lnurl-auth",
+  "homepage": "https://github.com/dyegolara/lnurl-auth-agents",
   "repository": {
     "type": "git",
-    "url": "https://github.com/dyegolara/openclaw-lnurl-auth.git"
+    "url": "https://github.com/dyegolara/lnurl-auth-agents.git"
   },
   "type": "commonjs",
   "dependencies": {
