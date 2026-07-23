@@ -103,7 +103,7 @@ Notes:
 // ---------------------------------------------------------------------------
 function hexToBytes(hex) {
   let h = String(hex).trim().replace(/^0x/, '');
-  if (h.length % 2) h = '0' + h;
+  if (h.length % 2) throw new Error('Invalid hex: odd length (' + h.length + ' chars)');
   if (!/^[0-9a-fA-F]*$/.test(h)) throw new Error('Invalid hex');
   return Buffer.from(h, 'hex');
 }
@@ -119,28 +119,18 @@ function resolveMasterSecret(opts) {
   if (opts.key) return hexToBytes(opts.key);
   const keyfile = opts.keyfile || DEFAULT_KEYFILE;
   const existing = readKeyFile(keyfile);
-  if (existing) {
+
+  if (existing && !opts.generate) {
     if (existing.length !== 32) throw new Error('Key file must hold a 32-byte hex secret');
     return existing;
   }
-  if (!opts.generate && existing === null) {
-    // Generate & persist a fresh master secret.
-    const master = genPrivateKey();
-    const dir = path.dirname(keyfile);
-    fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(keyfile, bytesToHex(master) + '\n', { mode: 0o600 });
-    log('Generated & persisted new master secret ->', keyfile);
-    return master;
-  }
-  if (opts.generate) {
-    const master = genPrivateKey();
-    const dir = path.dirname(keyfile);
-    fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(keyfile, bytesToHex(master) + '\n', { mode: 0o600 });
-    log('Generated & persisted new master secret ->', keyfile);
-    return master;
-  }
-  throw new Error('No key available and key file missing: ' + keyfile);
+
+  const master = genPrivateKey();
+  const dir = path.dirname(keyfile);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(keyfile, bytesToHex(master) + '\n', { mode: 0o600 });
+  log(existing ? 'Overwrote existing key (--generate) ->' : 'Generated & persisted new master secret ->', keyfile);
+  return master;
 }
 
 // Resolve the actual linking private key for a given service domain.
@@ -212,7 +202,7 @@ async function main() {
   }
   // Validate k1
   let k1Bytes;
-  try { k1Bytes = hexToBytes(k1); } catch (e) { throw new Error('k1 is not valid hex'); }
+  try { k1Bytes = hexToBytes(k1); } catch (e) { throw new Error('k1 is not valid hex: ' + e.message); }
   if (k1Bytes.length !== 32) throw new Error('k1 must be 32 bytes (64 hex chars), got ' + k1Bytes.length);
 
   if (opts.action) {

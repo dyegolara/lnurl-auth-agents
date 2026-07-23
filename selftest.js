@@ -92,6 +92,28 @@ async function main() {
   const pubB = (b.stdout.match(/"linkingPubkey":\s*"([0-9a-f]+)"/) || [])[1];
   check('linking pubkey stable for same domain', !!pubA && pubA === pubB, (pubA || '') + ' vs ' + (pubB || ''));
 
+  console.log('\n[6] --generate overwrites existing keyfile');
+  const oldKeyHex = fs.readFileSync(tmpKey, 'utf8').trim();
+  const r6 = await runCLI([ch5.lnurl, '--json', '--generate'], env);
+  const newKeyHex = fs.readFileSync(tmpKey, 'utf8').trim();
+  check('--generate overwrote the keyfile', newKeyHex !== oldKeyHex, oldKeyHex + ' -> ' + newKeyHex);
+  check('--generate still produces a 32-byte key', Buffer.from(newKeyHex, 'hex').length === 32);
+
+  // After overwrite, linking pubkey should differ (new master -> new derived key).
+  const pubAfterGen = (r6.stdout.match(/"linkingPubkey":\s*"([0-9a-f]+)"/) || [])[1];
+  check('linking pubkey changed after --generate', pubA !== pubAfterGen, pubA + ' -> ' + (pubAfterGen || ''));
+
+  console.log('\n[7] Odd-length hex k1 is rejected (no silent padding)');
+  const { decodeLnurl: dl, encodeLnurl: el } = require('./lib/bech32');
+  const ch7 = await getJSON(`http://127.0.0.1:${PORT}/challenge`);
+  const svc7 = dl(ch7.lnurl);
+  // Replace k1 with 63 hex chars (odd length)
+  const badSvc7 = svc7.replace(/k1=[0-9a-f]+/i, 'k1=abc'); // 3 chars, odd
+  const badLnurl7 = el(badSvc7);
+  const r7 = await runCLI([badLnurl7], env);
+  check('odd-length k1 rejected (exit != 0)', r7.status !== 0, 'exit=' + r7.status + ' stderr=' + r7.stderr);
+  check('error message mentions invalid hex', /not valid hex|invalid hex/i.test(r7.stderr), r7.stderr.trim());
+
   // Cleanup
   try { fs.unlinkSync(tmpKey); } catch (e) {}
   server.close();
