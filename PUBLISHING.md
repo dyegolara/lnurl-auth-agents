@@ -279,9 +279,9 @@ openclaw skills install lnurl-auth
 - [x] **1.** Agregar CI con GitHub Actions
 - [x] **2.** Optimizar GitHub topics y discoverability
 - [x] **3.** Documentar instalacion para 8 plataformas en README
-- [ ] **4.** PR a openclaw/agent-skills
-- [x] **5.** Crear MCP server wrapper
-- [x] **5b.** Empaquetar como plugin multi-plataforma
+- [x] **4.** Crear MCP server wrapper
+- [x] **4b.** Empaquetar como plugin multi-plataforma
+- [ ] **5.** PR a openclaw/agent-skills
 - [ ] **6.** Publicar en skills.sh
 - [ ] **7.** PR a anthropics/skills (164k estrellas)
 - [ ] **8.** Publicar en Claude Community Marketplace
