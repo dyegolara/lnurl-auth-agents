@@ -4,7 +4,7 @@
   "description": "LNURL-auth (LUD-04) signer for LLM agents",
   "main": "lnurl_auth.js",
   "scripts": {
-    "test": "node selftest.js && node test/unit.js"
+    "test": "vitest run"
   },
   "keywords": [
     "lnurl",
@@ -30,5 +30,8 @@
   },
   "bin": {
     "lnurl-auth": "lnurl_auth.js"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.10"
   }
 }
