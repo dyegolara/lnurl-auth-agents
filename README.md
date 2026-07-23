@@ -1,5 +1,7 @@
 # lnurl-auth — LNURL-auth (LUD-04) signer for LLM coding agents
 
+[![CI](https://github.com/dyegolara/lnurl-auth-agents/actions/workflows/ci.yml/badge.svg)](https://github.com/dyegolara/lnurl-auth-agents/actions/workflows/ci.yml)
+
 Authenticate to any LNURL-auth service ("Sign in with Lightning") **entirely
 client-side** — no Lightning node, no wallet, no payment, no cost.
 
