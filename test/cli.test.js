@@ -121,6 +121,7 @@ describe('CLI', () => {
     expect(parsed.linkingPubkey).toBeTruthy();
     expect(parsed.callbackUrl).toBeTruthy();
     expect(parsed.dryRun).toBe(false);
+    expect(parsed.method).toBe('POST');
   });
 
   it('--json with --dry-run', async () => {
@@ -235,7 +236,7 @@ describe('CLI', () => {
     const badSvc = svc.replace(/k1=[0-9a-f]+/i, 'k1=abc');
     const r = await runCLI([encodeLnurl(badSvc)], env);
     expect(r.status).not.toBe(0);
-    expect(r.stderr).toMatch(/hex/i);
+    expect(r.stderr).toMatch(/hex|64/i);
   });
 
   it('exit 3 when server returns ERROR', async () => {
@@ -260,12 +261,16 @@ describe('CLI', () => {
     expect(r.status).toBe(0);
   });
 
-  it('--callback override flag', async () => {
+  it('--callback override flag submits to custom URL and k1 is consumed', async () => {
     const ch = await getChallenge();
     const r = await runCLI([ch.lnurl, '--json', '--callback', `http://127.0.0.1:${PORT}/cb`], env);
     expect(r.status).toBe(0);
     const parsed = parseFirstJson(r.stdout);
-    expect(parsed.callbackUrl).toMatch(new RegExp(`^http://127\\.0\\.0\\.1:${PORT}/cb`));
+    expect(parsed.callbackUrl).toBe(`http://127.0.0.1:${PORT}/cb`);
+    expect(parsed.method).toBe('POST');
+    // Verify k1 was actually consumed by the mock server
+    const replay = await runCLI([ch.lnurl, '--callback', `http://127.0.0.1:${PORT}/cb`], env);
+    expect(replay.status).toBe(3);
   });
 
   it('--action with valid value', async () => {
@@ -325,5 +330,38 @@ describe('CLI', () => {
     const ch = await getChallenge();
     const r = await runCLI([ch.lnurl, '--key'], env);
     expect(r.status).toBe(0);
+  });
+
+  it('--timeout flag is accepted', async () => {
+    const ch = await getChallenge();
+    const r = await runCLI([ch.lnurl, '--json', '--timeout', '30000'], env);
+    expect(r.status).toBe(0);
+    const parsed = parseFirstJson(r.stdout);
+    expect(parsed.linkingPubkey).toBeTruthy();
+  });
+
+  it('--timeout with invalid value exits 2', async () => {
+    const ch = await getChallenge();
+    const r = await runCLI([ch.lnurl, '--timeout', 'abc'], env);
+    expect(r.status).toBe(2);
+  });
+
+  it('network error on unreachable callback exits 1', async () => {
+    const ch = await getChallenge();
+    const r = await runCLI([ch.lnurl, '--callback', `http://127.0.0.1:19999/cb`], env);
+    expect(r.status).toBe(1);
+    expect(r.stderr).toMatch(/error|ECONNREFUSED/i);
+  });
+
+  it('short k1 (not 64 hex chars) exits 1', async () => {
+    const ch = await getChallenge();
+    const { decodeLnurl } = await import('../lib/bech32');
+    const svc = decodeLnurl(ch.lnurl);
+    // Replace k1 with a valid hex but only 60 chars (30 bytes)
+    const shortK1 = 'aa'.repeat(30);
+    const badSvc = svc.replace(/k1=[0-9a-f]+/i, 'k1=' + shortK1);
+    const r = await runCLI([encodeLnurl(badSvc)], env);
+    expect(r.status).toBe(1);
+    expect(r.stderr).toMatch(/64|bytes/i);
   });
 });

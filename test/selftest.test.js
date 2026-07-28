@@ -122,6 +122,6 @@ describe('selftest (e2e)', () => {
     const badSvc = svc.replace(/k1=[0-9a-f]+/i, 'k1=abc');
     const r = await runCLI([encodeLnurl(badSvc)], env);
     expect(r.status).not.toBe(0);
-    expect(r.stderr).toMatch(/not valid hex|invalid hex/i);
+    expect(r.stderr).toMatch(/not valid hex|invalid hex|64 hex/i);
   });
 });

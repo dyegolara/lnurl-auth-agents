@@ -2,7 +2,7 @@
 // Mock LNURL-auth (LUD-04) service — for local, cost-free self-testing only.
 // Emulates a "Sign in with Lightning" server:
 //   GET /challenge        -> returns { lnurl, k1, serviceUrl }
-//   GET /cb?k1&sig&key    -> verifies the DER signature over k1 and replies
+//   POST /cb (JSON body)  -> verifies the DER signature over k1 and replies
 //                            {"status":"OK"} or {"status":"ERROR","reason":...}
 //
 // No network egress, no Lightning node, no payment.
@@ -32,25 +32,35 @@ function start(port = 8731) {
       return send(200, { lnurl, k1, serviceUrl });
     }
 
-    if (u.pathname === '/cb' && req.method === 'GET') {
-      const k1 = u.searchParams.get('k1');
-      const sigHex = u.searchParams.get('sig');
-      const keyHex = u.searchParams.get('key');
-      if (!k1 || !sigHex || !keyHex) return send(400, { status: 'ERROR', reason: 'missing k1/sig/key' });
-      if (!validK1.has(k1)) return send(400, { status: 'ERROR', reason: 'unknown or already-used k1' });
+    if (u.pathname === '/cb' && req.method === 'POST') {
+      let body = '';
+      req.on('data', (c) => (body += c));
+      req.on('end', () => {
+        let parsed;
+        try { parsed = JSON.parse(body); } catch (e) {
+          return send(400, { status: 'ERROR', reason: 'invalid JSON body' });
+        }
 
-      try {
-        const k1Bytes = Buffer.from(k1, 'hex');
-        const pubBytes = Buffer.from(keyHex, 'hex');
-        const derBytes = Buffer.from(sigHex, 'hex');
-        const compact = derDecode(derBytes);
-        const ok = verifyCompact(k1Bytes, compact, pubBytes);
-        if (!ok) return send(400, { status: 'ERROR', reason: 'signature verification failed' });
-        validK1.delete(k1);
-        return send(200, { status: 'OK' });
-      } catch (e) {
-        return send(400, { status: 'ERROR', reason: 'bad signature/key: ' + e.message });
-      }
+        const k1 = parsed.k1;
+        const sigHex = parsed.sig;
+        const keyHex = parsed.key;
+        if (!k1 || !sigHex || !keyHex) return send(400, { status: 'ERROR', reason: 'missing k1/sig/key' });
+        if (!validK1.has(k1)) return send(400, { status: 'ERROR', reason: 'unknown or already-used k1' });
+
+        try {
+          const k1Bytes = Buffer.from(k1, 'hex');
+          const pubBytes = Buffer.from(keyHex, 'hex');
+          const derBytes = Buffer.from(sigHex, 'hex');
+          const compact = derDecode(derBytes);
+          const ok = verifyCompact(k1Bytes, compact, pubBytes);
+          if (!ok) return send(400, { status: 'ERROR', reason: 'signature verification failed' });
+          validK1.delete(k1);
+          return send(200, { status: 'OK' });
+        } catch (e) {
+          return send(400, { status: 'ERROR', reason: 'bad signature/key: ' + e.message });
+        }
+      });
+      return;
     }
 
     send(404, { status: 'ERROR', reason: 'not found' });
