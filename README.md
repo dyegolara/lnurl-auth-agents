@@ -34,7 +34,7 @@ sequenceDiagram
     end
 
     CLI->>CLI: 3. Sign raw k1 with secp256k1 → DER signature
-    CLI->>Service: GET <callback>?k1=...&sig=<hex DER>&key=<hex pub>&t=login
+    CLI->>Service: POST <callback> (JSON body: {k1, sig, key, t})
     Service-->>CLI: {"status":"OK"} or {"status":"ERROR","reason":"..."}
     CLI-->>Agent: exit 0 / 3 (OK / ERROR)
 ```
@@ -228,8 +228,9 @@ as structured JSON.
 | `--single-key` | Use one global linking key for all services (no per-domain derivation) |
 | `--no-t` | Omit `&t=<action>` from the callback URL |
 | `--action <a>` | Assert/override action: `register`, `login`, `link`, or `auth` |
-| `--callback <url>` | Override the URL the signature is submitted to |
+| `--callback <url>` | Override the URL the signature is POSTed to |
 | `--dry-run` | Decode, fetch `k1`, sign — but **do not** submit the callback |
+| `--timeout <ms>` | HTTP request timeout in ms (default: 15000) |
 | `--json` | Emit machine-readable JSON to stdout |
 | `-v`, `--verbose` | Verbose logging |
 | `-q`, `--quiet` | Suppress progress logs (stderr) |
@@ -255,7 +256,7 @@ const k1Bytes = Buffer.from(k1, 'hex');
 const compact = signCompact(k1Bytes, linkingPriv);
 const derSigHex = Buffer.from(encode(compact)).toString('hex');
 
-// GET <serviceUrl>&sig=<derSigHex>&key=<pub key>
+// POST <serviceUrl> with JSON body { k1, sig, key, t }
 ```
 
 See [`examples/programmatic.js`](./examples/programmatic.js) for a full example.

@@ -19,9 +19,16 @@ function getJSON(path) {
   });
 }
 
-function postJSON(path) {
+function postJSON(path, body) {
   return new Promise((resolve, reject) => {
-    const req = http.request(`http://127.0.0.1:${PORT}${path}`, { method: 'POST' }, (res) => {
+    const jsonBody = JSON.stringify(body || {});
+    const req = http.request(`http://127.0.0.1:${PORT}${path}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(jsonBody),
+      },
+    }, (res) => {
       let d = ''; res.on('data', (c) => (d += c));
       res.on('end', () => {
         try { resolve({ status: res.statusCode, headers: res.headers, body: JSON.parse(d) }); }
@@ -29,8 +36,14 @@ function postJSON(path) {
       });
     });
     req.on('error', reject);
+    req.write(jsonBody);
     req.end();
   });
+}
+
+function cbUrl({ k1, sig, key }) {
+  const params = new URLSearchParams({ k1, sig, key });
+  return `/cb?${params.toString()}`;
 }
 
 function createValidSig(k1Hex) {
@@ -77,8 +90,14 @@ describe('mock_server', () => {
     expect(res.status).toBe(404);
   });
 
+  it('GET /cb without params returns 400', async () => {
+    const res = await getJSON('/cb');
+    expect(res.status).toBe(400);
+    expect(res.body.reason).toMatch(/missing/);
+  });
+
   it('POST /cb returns 404', async () => {
-    const res = await postJSON('/cb');
+    const res = await postJSON('/cb', {});
     expect(res.status).toBe(404);
   });
 
@@ -90,7 +109,7 @@ describe('mock_server', () => {
   it('GET /cb with valid signature on known k1 returns OK', async () => {
     const ch = await getJSON('/challenge');
     const sig = createValidSig(ch.body.k1);
-    const res = await getJSON(`/cb?k1=${ch.body.k1}&sig=${sig.sig}&key=${sig.key}`);
+    const res = await getJSON(cbUrl({ k1: ch.body.k1, sig: sig.sig, key: sig.key }));
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('OK');
   });
@@ -98,7 +117,7 @@ describe('mock_server', () => {
   it('GET /cb with unknown k1 returns ERROR', async () => {
     const randomK1 = crypto.randomBytes(32).toString('hex');
     const sig = createValidSig(randomK1);
-    const res = await getJSON(`/cb?k1=${randomK1}&sig=${sig.sig}&key=${sig.key}`);
+    const res = await getJSON(cbUrl({ k1: randomK1, sig: sig.sig, key: sig.key }));
     expect(res.status).toBe(400);
     expect(res.body.reason).toMatch(/unknown|already-used/);
   });
@@ -106,8 +125,8 @@ describe('mock_server', () => {
   it('GET /cb replay (already-used k1) returns ERROR', async () => {
     const ch = await getJSON('/challenge');
     const sig = createValidSig(ch.body.k1);
-    await getJSON(`/cb?k1=${ch.body.k1}&sig=${sig.sig}&key=${sig.key}`);
-    const res = await getJSON(`/cb?k1=${ch.body.k1}&sig=${sig.sig}&key=${sig.key}`);
+    await getJSON(cbUrl({ k1: ch.body.k1, sig: sig.sig, key: sig.key }));
+    const res = await getJSON(cbUrl({ k1: ch.body.k1, sig: sig.sig, key: sig.key }));
     expect(res.status).toBe(400);
     expect(res.body.reason).toMatch(/unknown|already-used/);
   });
@@ -133,7 +152,7 @@ describe('mock_server', () => {
   it('GET /cb with invalid DER hex returns 400', async () => {
     const ch = await getJSON('/challenge');
     const sig = createValidSig(ch.body.k1);
-    const res = await getJSON(`/cb?k1=${ch.body.k1}&sig=zzzzzzzz&key=${sig.key}`);
+    const res = await getJSON(cbUrl({ k1: ch.body.k1, sig: 'zzzzzzzz', key: sig.key }));
     expect(res.status).toBe(400);
   });
 
@@ -142,7 +161,7 @@ describe('mock_server', () => {
     const sig = createValidSig(ch.body.k1);
     const chars = sig.sig.split('');
     chars[10] = chars[10] === 'a' ? 'b' : 'a';
-    const res = await getJSON(`/cb?k1=${ch.body.k1}&sig=${chars.join('')}&key=${sig.key}`);
+    const res = await getJSON(cbUrl({ k1: ch.body.k1, sig: chars.join(''), key: sig.key }));
     expect(res.status).toBe(400);
     expect(res.body.reason).toMatch(/verification/);
   });
@@ -151,7 +170,7 @@ describe('mock_server', () => {
     const ch = await getJSON('/challenge');
     const sig = createValidSig(ch.body.k1);
     const wrongKey = createValidSig(ch.body.k1);
-    const res = await getJSON(`/cb?k1=${ch.body.k1}&sig=${sig.sig}&key=${wrongKey.key}`);
+    const res = await getJSON(cbUrl({ k1: ch.body.k1, sig: sig.sig, key: wrongKey.key }));
     expect(res.status).toBe(400);
     expect(res.body.reason).toMatch(/verification/);
   });
@@ -159,16 +178,16 @@ describe('mock_server', () => {
   it('GET /cb with wrong-length pubkey returns 400', async () => {
     const ch = await getJSON('/challenge');
     const sig = createValidSig(ch.body.k1);
-    const res = await getJSON(`/cb?k1=${ch.body.k1}&sig=${sig.sig}&key=aa`);
+    const res = await getJSON(cbUrl({ k1: ch.body.k1, sig: sig.sig, key: 'aa' }));
     expect(res.status).toBe(400);
   });
 
   it('challenge k1 is consumed on successful auth', async () => {
     const ch = await getJSON('/challenge');
     const sig = createValidSig(ch.body.k1);
-    const authRes = await getJSON(`/cb?k1=${ch.body.k1}&sig=${sig.sig}&key=${sig.key}`);
+    const authRes = await getJSON(cbUrl({ k1: ch.body.k1, sig: sig.sig, key: sig.key }));
     expect(authRes.body.status).toBe('OK');
-    const replayRes = await getJSON(`/cb?k1=${ch.body.k1}&sig=${sig.sig}&key=${sig.key}`);
+    const replayRes = await getJSON(cbUrl({ k1: ch.body.k1, sig: sig.sig, key: sig.key }));
     expect(replayRes.status).toBe(400);
   });
 

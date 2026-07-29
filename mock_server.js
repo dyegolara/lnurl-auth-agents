@@ -2,8 +2,8 @@
 // Mock LNURL-auth (LUD-04) service — for local, cost-free self-testing only.
 // Emulates a "Sign in with Lightning" server:
 //   GET /challenge        -> returns { lnurl, k1, serviceUrl }
-//   GET /cb?k1&sig&key    -> verifies the DER signature over k1 and replies
-//                            {"status":"OK"} or {"status":"ERROR","reason":...}
+//   GET /cb?k1=...&sig=...&key=...  -> verifies the DER signature over k1 and replies
+//                                       {"status":"OK"} or {"status":"ERROR","reason":...}
 //
 // No network egress, no Lightning node, no payment.
 

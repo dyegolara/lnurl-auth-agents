@@ -7,8 +7,8 @@
 //      32-byte hex challenge) and optionally `action`.
 //   2. sign sha256? NO: sign the raw 32-byte `k1` with a secp256k1 linking key
 //      (DER-encoded ECDSA signature).
-//   3. GET the service URL with `&sig=<hex DER sig>&key=<hex compressed pubkey>`
-//      (and `&t=<action>` when known) appended.
+//   3. GET the callback URL with query params: existing params (k1, tag, action)
+//      plus sig=<DER-hex> and key=<compressed-pubkey-hex>.
 //   4. Server responds {"status":"OK"} or {"status":"ERROR","reason":...}.
 //
 // No Lightning node, no payment, no cost.
@@ -19,7 +19,7 @@ const path = require('path');
 const http = require('http');
 const https = require('https');
 const { decodeLnurl } = require('./lib/bech32');
-const { genPrivateKey, getPublicKey, signCompact, deriveLinkingKey, randomBytes } = require('./lib/secp');
+const { genPrivateKey, getPublicKey, signCompact, verifyCompact, deriveLinkingKey, randomBytes } = require('./lib/secp');
 const { encode, decode } = require('./lib/der');
 
 const SKILL_DIR = __dirname;
@@ -27,6 +27,10 @@ const DEFAULT_KEYFILE = process.env.LNURL_AUTH_KEYFILE ||
   path.join(os.homedir(), '.config', 'lnurl-auth', 'master.key');
 
 const ACTIONS = new Set(['register', 'login', 'link', 'auth']);
+const VERSION = '1.2.0';
+const USER_AGENT = `lnurl-auth/${VERSION} (+https://github.com/dyegolara/lnurl-auth-agents)`;
+const MAX_REDIRECTS = 5;
+const DEFAULT_TIMEOUT = 15000;
 
 function log(...a) { if (!QUIET) console.error('[lnurl-auth]', ...a); }
 let QUIET = false;
@@ -53,6 +57,7 @@ function parseArgs(argv) {
       case '--callback': opts.callback = next(); break;
       case '--dry-run': opts.dryRun = true; break;
       case '--json': opts.json = true; break;
+      case '--timeout': opts.timeout = parseInt(next(), 10); break;
       case '-v': case '--verbose': opts.verbose = true; break;
       case '-q': case '--quiet': QUIET = true; opts.quiet = true; break;
       default:
@@ -79,10 +84,11 @@ Options:
   --generate             force-generate a new master key and persist it
   --single-key           use one key for all services (no per-domain derivation)
   --no-per-domain        alias of --single-key
-  --no-t                 do not append &t=<action> to the callback
+  --no-t                 (ignored; kept for backward compatibility)
   --action <a>           assert/override action: register|login|link|auth
-  --callback <url>       override the URL the signature is submitted to
+  --callback <url>       override the base URL for the auth GET callback
   --dry-run              decode, fetch k1, sign — but do NOT submit the callback
+  --timeout <ms>         HTTP request timeout in ms (default: 15000)
   --json                 emit machine-readable JSON
   -v, --verbose          verbose logging
   -q, --quiet            suppress progress logs
@@ -144,20 +150,110 @@ function resolveLinkingKey(opts, domain) {
 }
 
 // ---------------------------------------------------------------------------
+// HTTP Proxy support
+// ---------------------------------------------------------------------------
+function getProxyAgent(protocol) {
+  const envVar = protocol === 'https:' ? 'HTTPS_PROXY' : 'HTTP_PROXY';
+  const proxyUrl = process.env[envVar] || process.env[envVar.toLowerCase()];
+  if (!proxyUrl) return undefined;
+
+  try {
+    const { HttpsProxyAgent } = require('https-proxy-agent');
+    return new HttpsProxyAgent(proxyUrl);
+  } catch (e) {
+    try {
+      const { HttpProxyAgent } = require('http-proxy-agent');
+      return new HttpProxyAgent(proxyUrl);
+    } catch (e2) {
+      return undefined;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // HTTP GET (http/https), returns {status, body}
 // ---------------------------------------------------------------------------
-function httpGet(urlStr) {
+function httpGet(urlStr, opts = {}) {
   return new Promise((resolve, reject) => {
     let u;
     try { u = new URL(urlStr); } catch (e) { return reject(new Error('Invalid URL: ' + urlStr)); }
+
     const lib = u.protocol === 'https:' ? https : http;
-    const req = lib.get(urlStr, { timeout: 15000 }, (res) => {
+    const timeout = opts.timeout || DEFAULT_TIMEOUT;
+    const redirectCount = opts._redirectCount || 0;
+    const agent = opts.agent || getProxyAgent(u.protocol);
+
+    if (redirectCount > MAX_REDIRECTS)
+      return reject(new Error('Too many redirects (' + redirectCount + ')'));
+
+    const reqOptions = { timeout, headers: { 'User-Agent': USER_AGENT } };
+    if (agent) reqOptions.agent = agent;
+
+    const req = lib.get(urlStr, reqOptions, (res) => {
+      if ([301, 302, 307, 308].includes(res.statusCode) && res.headers.location) {
+        res.resume();
+        return resolve(httpGet(
+          new URL(res.headers.location, urlStr).toString(),
+          { ...opts, _redirectCount: redirectCount + 1, timeout }
+        ));
+      }
+
       let data = '';
       res.on('data', (c) => (data += c));
       res.on('end', () => resolve({ status: res.statusCode, body: data }));
     });
-    req.on('timeout', () => req.destroy(new Error('Request timed out')));
+    req.on('timeout', () => req.destroy(new Error('Request timed out after ' + timeout + 'ms')));
     req.on('error', reject);
+  });
+}
+
+// ---------------------------------------------------------------------------
+// HTTP POST with JSON body, returns {status, body}
+// ---------------------------------------------------------------------------
+function httpPost(urlStr, body, opts = {}) {
+  return new Promise((resolve, reject) => {
+    let u;
+    try { u = new URL(urlStr); } catch (e) { return reject(new Error('Invalid URL: ' + urlStr)); }
+
+    const lib = u.protocol === 'https:' ? https : http;
+    const timeout = opts.timeout || DEFAULT_TIMEOUT;
+    const redirectCount = opts._redirectCount || 0;
+    const agent = opts.agent || getProxyAgent(u.protocol);
+
+    if (redirectCount > MAX_REDIRECTS)
+      return reject(new Error('Too many redirects (' + redirectCount + ')'));
+
+    const jsonBody = JSON.stringify(body);
+
+    const reqOptions = {
+      method: 'POST',
+      timeout,
+      headers: {
+        'User-Agent': USER_AGENT,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(jsonBody),
+      },
+    };
+    if (agent) reqOptions.agent = agent;
+
+    const req = lib.request(urlStr, reqOptions, (res) => {
+      if ([301, 302, 307, 308].includes(res.statusCode) && res.headers.location) {
+        res.resume();
+        return resolve(httpPost(
+          new URL(res.headers.location, urlStr).toString(),
+          body,
+          { ...opts, _redirectCount: redirectCount + 1, timeout }
+        ));
+      }
+
+      let data = '';
+      res.on('data', (c) => (data += c));
+      res.on('end', () => resolve({ status: res.statusCode, body: data }));
+    });
+    req.on('timeout', () => req.destroy(new Error('Request timed out after ' + timeout + 'ms')));
+    req.on('error', reject);
+    req.write(jsonBody);
+    req.end();
   });
 }
 
@@ -174,6 +270,11 @@ async function main() {
   const lnurl = opts.lnurl || opts.positional[0];
   if (!lnurl) { console.error('Error: no lnurl provided.\n'); console.error(usage()); process.exit(2); }
 
+  if (opts.timeout !== undefined && (isNaN(opts.timeout) || opts.timeout <= 0)) {
+    console.error('Error: --timeout must be a positive number (ms)'); process.exit(2);
+  }
+  const timeout = opts.timeout || DEFAULT_TIMEOUT;
+
   // 1) Decode lnurl -> service URL
   let serviceUrl;
   try { serviceUrl = decodeLnurl(lnurl); }
@@ -189,7 +290,7 @@ async function main() {
   let fetchedJson = null;
   if (!k1) {
     log('No k1 in URL; performing GET to fetch challenge...');
-    const r = await httpGet(serviceUrl);
+    const r = await httpGet(serviceUrl, { timeout });
     if (r.status !== 200) throw new Error('Challenge GET failed: HTTP ' + r.status);
     try { fetchedJson = JSON.parse(r.body); } catch (e) { throw new Error('Challenge response not JSON'); }
     k1 = fetchedJson && fetchedJson.k1;
@@ -200,7 +301,11 @@ async function main() {
       opts.callback = opts.callback || (fetchedJson.callback || fetchedJson.url);
     }
   }
-  // Validate k1
+
+  // Validate k1: must be exactly 64 hex chars (32 bytes)
+  if (!/^[0-9a-fA-F]{64}$/.test(k1))
+    throw new Error('k1 must be 64 hex chars (32 bytes), got ' + (k1 ? k1.length + ' chars' : 'none'));
+
   let k1Bytes;
   try { k1Bytes = hexToBytes(k1); } catch (e) { throw new Error('k1 is not valid hex: ' + e.message); }
   if (k1Bytes.length !== 32) throw new Error('k1 must be 32 bytes (64 hex chars), got ' + k1Bytes.length);
@@ -214,28 +319,38 @@ async function main() {
   const linkingPriv = resolveLinkingKey(opts, domain);
   const pubBytes = getPublicKey(linkingPriv, true); // compressed 33 bytes
   const compactSig = signCompact(k1Bytes, linkingPriv);
+
+  // Self-verify the signature before exposing it to the server.
+  const verified = verifyCompact(k1Bytes, compactSig, pubBytes);
+  if (!verified) throw new Error('Self-verification failed: signature does not verify against own pubkey');
+
   const derSig = encode(compactSig);
   const sigHex = bytesToHex(derSig);
   const keyHex = bytesToHex(pubBytes);
   log('Linking pubkey:', keyHex);
   log('Action:', action || '(none)');
 
-  // 4) Build submission URL.
-  const submitUrl = new URL(opts.callback || serviceUrl);
-  submitUrl.searchParams.set('k1', k1);
-  submitUrl.searchParams.set('sig', sigHex);
-  submitUrl.searchParams.set('key', keyHex);
-  if (action && !opts.noT) submitUrl.searchParams.set('t', action);
-
-  const submitStr = submitUrl.toString();
+  // Build GET callback URL per LUD-04: preserve existing query params (k1, tag,
+  // action, etc.), then append sig and key.
+  const rawCallbackUrl = opts.callback || serviceUrl;
+  const callbackUrlObj = new URL(rawCallbackUrl);
+  // When --callback overrides the URL, k1 may not be present; add it.
+  if (!callbackUrlObj.searchParams.has('k1')) callbackUrlObj.searchParams.set('k1', k1);
+  // Avoid duplicates in case sig/key appear in the URL already.
+  callbackUrlObj.searchParams.delete('sig');
+  callbackUrlObj.searchParams.delete('key');
+  callbackUrlObj.searchParams.set('sig', sigHex);
+  callbackUrlObj.searchParams.set('key', keyHex);
+  const callbackBase = callbackUrlObj.toString();
 
   if (opts.json) {
     console.log(JSON.stringify({
       serviceUrl, domain, k1, action: action || null,
-      linkingPubkey: keyHex, callbackUrl: submitStr, dryRun: !!opts.dryRun,
+      linkingPubkey: keyHex, callbackUrl: callbackBase, method: 'GET',
+      dryRun: !!opts.dryRun,
     }, null, 2));
   } else {
-    log('Callback URL:', submitStr);
+    log('Callback URL:', callbackBase);
   }
 
   if (opts.dryRun) {
@@ -244,9 +359,9 @@ async function main() {
     process.exit(0);
   }
 
-  // 5) Submit the callback and report the server response.
+  // 5) Submit the callback via GET per LUD-04 and report the server response.
   log('Submitting signature to service...');
-  const resp = await httpGet(submitStr);
+  const resp = await httpGet(callbackBase, { timeout });
   let json = null;
   try { json = JSON.parse(resp.body); } catch (e) { /* non-JSON */ }
 

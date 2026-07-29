@@ -46,7 +46,7 @@ When interacting with a web page, look for:
 node <path_to_skill>/lnurl_auth.js "<lnurl1...>" --dry-run --json
 ```
 
-This decodes the URL, derives the key, and builds the callback URL — but does
+This decodes the URL, derives the key, and builds the callback — but does
 **not** submit the signature. Use this to inspect the service URL before
 committing.
 
@@ -56,7 +56,18 @@ committing.
 node <path_to_skill>/lnurl_auth.js "<lnurl1...>" --json
 ```
 
-The `--json` flag gives machine-readable output you can parse.
+The `--json` flag gives machine-readable output you can parse. The signature
+is submitted via **POST** with a JSON body `{ k1, sig, key }` to the service.
+
+### Scripting with jq
+
+```bash
+# Extract the linking pubkey
+node <path_to_skill>/lnurl_auth.js "<lnurl1...>" --json --dry-run | jq -r .linkingPubkey
+
+# Check login status in CI
+node <path_to_skill>/lnurl_auth.js "<lnurl1...>" --json | jq -r '.response.status'
+```
 
 ## Exit codes
 
@@ -81,7 +92,8 @@ Progress/log messages go to **stderr**. The server response goes to **stdout**.
   "k1": "abcdef0123456789...",
   "action": "login",
   "linkingPubkey": "02abcdef...",
-  "callbackUrl": "https://example.com/cb?k1=...&sig=...&key=...&t=login",
+  "callbackUrl": "https://example.com/cb",
+  "method": "POST",
   "dryRun": false
 }
 ```
@@ -145,7 +157,7 @@ const k1 = new URL(url).searchParams.get('k1');
 const k1Bytes = Buffer.from(k1, 'hex');
 const sig = signCompact(k1Bytes, priv);
 const derHex = Buffer.from(encode(sig)).toString('hex');
-// GET <callback>?k1=<k1>&sig=<derHex>&key=<pub hex>&t=<action>
+// POST <callback> with JSON body { k1, sig, key, t }
 ```
 
 ## Self-test
@@ -167,6 +179,6 @@ All tests are offline and cost-free.
 - This is **auth-only** — no payments, no invoices, no Lightning node.
 - The derived key is local to this machine; it is **not** the same as a user's
   phone wallet identity (those use BIP32/LUD-05 derivation from a seed phrase).
-- The only network call is the final GET to the service's callback URL.
+- The only network call is the final POST to the service's callback URL.
 - The `k1` challenge is a one-time nonce — once submitted, it cannot be reused
   (replay protection enforced by the server).
