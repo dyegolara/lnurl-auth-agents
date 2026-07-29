@@ -40,7 +40,17 @@ console.log('DER sig hex   :', derSigHex);
 const roundtrip = decode(Buffer.from(derSigHex, 'hex'));
 console.log('roundtrip ok  :', Buffer.compare(roundtrip, compactSig) === 0);
 
+const pubHex = Buffer.from(pub).toString('hex');
+
 // 5) Submit: POST to the service callback with JSON body { k1, sig, key }.
-//    const submitUrl = serviceUrl.split('?')[0];
-//    fetch(submitUrl, { method: 'POST', body: JSON.stringify({ k1, sig: derSigHex, key: pubHex }) });
+//    Preserve existing query params (e.g. tag=login) but remove k1/sig/key to avoid duplication.
+//    const submitUrlObj = new URL(serviceUrl);
+//    submitUrlObj.searchParams.delete('k1');
+//    submitUrlObj.searchParams.delete('sig');
+//    submitUrlObj.searchParams.delete('key');
+//    fetch(submitUrlObj.toString(), {
+//      method: 'POST',
+//      headers: { 'Content-Type': 'application/json' },
+//      body: JSON.stringify({ k1, sig: derSigHex, key: pubHex }),
+//    });
 //    (see handshake.js for the full httpPost implementation)

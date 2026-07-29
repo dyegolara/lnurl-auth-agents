@@ -193,7 +193,7 @@ function httpGet(urlStr, opts = {}) {
         res.resume();
         return resolve(httpGet(
           new URL(res.headers.location, urlStr).toString(),
-          { ...opts, _redirectCount: redirectCount + 1, timeout, agent }
+          { ...opts, _redirectCount: redirectCount + 1, timeout }
         ));
       }
 
@@ -241,7 +241,7 @@ function httpPost(urlStr, body, opts = {}) {
         return resolve(httpPost(
           new URL(res.headers.location, urlStr).toString(),
           body,
-          { ...opts, _redirectCount: redirectCount + 1, timeout, agent }
+          { ...opts, _redirectCount: redirectCount + 1, timeout }
         ));
       }
 
@@ -329,10 +329,13 @@ async function main() {
   log('Linking pubkey:', keyHex);
   log('Action:', action || '(none)');
 
-  // 4) Build submission URL (base URL without query params for POST) and body.
+  // Build submission URL: preserve existing query params but remove k1/sig/key to avoid duplication with POST body.
   const rawCallbackUrl = opts.callback || serviceUrl;
-  // Strip query params from the callback URL — POST sends data in the body.
-  const callbackBase = rawCallbackUrl.split('?')[0];
+  const callbackUrlObj = new URL(rawCallbackUrl);
+  callbackUrlObj.searchParams.delete('k1');
+  callbackUrlObj.searchParams.delete('sig');
+  callbackUrlObj.searchParams.delete('key');
+  const callbackBase = callbackUrlObj.toString();
   const postBody = { k1, sig: sigHex, key: keyHex };
   if (action && !opts.noT) postBody.t = action;
 
