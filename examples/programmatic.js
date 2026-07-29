@@ -42,15 +42,10 @@ console.log('roundtrip ok  :', Buffer.compare(roundtrip, compactSig) === 0);
 
 const pubHex = Buffer.from(pub).toString('hex');
 
-// 5) Submit: POST to the service callback with JSON body { k1, sig, key }.
-//    Preserve existing query params (e.g. tag=login) but remove k1/sig/key to avoid duplication.
+// 5) Submit: GET the callback URL with sig and key appended as query params.
+//    The existing params (k1, tag, action) are preserved per LUD-04.
 //    const submitUrlObj = new URL(serviceUrl);
-//    submitUrlObj.searchParams.delete('k1');
-//    submitUrlObj.searchParams.delete('sig');
-//    submitUrlObj.searchParams.delete('key');
-//    fetch(submitUrlObj.toString(), {
-//      method: 'POST',
-//      headers: { 'Content-Type': 'application/json' },
-//      body: JSON.stringify({ k1, sig: derSigHex, key: pubHex }),
-//    });
-//    (see handshake.js for the full httpPost implementation)
+//    submitUrlObj.searchParams.set('sig', derSigHex);
+//    submitUrlObj.searchParams.set('key', pubHex);
+//    fetch(submitUrlObj.toString());
+//    (see handshake.js for the full httpGet implementation)

@@ -41,6 +41,11 @@ function postJSON(path, body) {
   });
 }
 
+function cbUrl({ k1, sig, key }) {
+  const params = new URLSearchParams({ k1, sig, key });
+  return `/cb?${params.toString()}`;
+}
+
 function createValidSig(k1Hex) {
   const priv = genPrivateKey();
   const pub = getPublicKey(priv, true);
@@ -85,8 +90,14 @@ describe('mock_server', () => {
     expect(res.status).toBe(404);
   });
 
-  it('GET /cb returns 404', async () => {
+  it('GET /cb without params returns 400', async () => {
     const res = await getJSON('/cb');
+    expect(res.status).toBe(400);
+    expect(res.body.reason).toMatch(/missing/);
+  });
+
+  it('POST /cb returns 404', async () => {
+    const res = await postJSON('/cb', {});
     expect(res.status).toBe(404);
   });
 
@@ -95,88 +106,88 @@ describe('mock_server', () => {
     expect(res.status).toBe(404);
   });
 
-  it('POST /cb with valid signature on known k1 returns OK', async () => {
+  it('GET /cb with valid signature on known k1 returns OK', async () => {
     const ch = await getJSON('/challenge');
     const sig = createValidSig(ch.body.k1);
-    const res = await postJSON('/cb', { k1: ch.body.k1, sig: sig.sig, key: sig.key });
+    const res = await getJSON(cbUrl({ k1: ch.body.k1, sig: sig.sig, key: sig.key }));
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('OK');
   });
 
-  it('POST /cb with unknown k1 returns ERROR', async () => {
+  it('GET /cb with unknown k1 returns ERROR', async () => {
     const randomK1 = crypto.randomBytes(32).toString('hex');
     const sig = createValidSig(randomK1);
-    const res = await postJSON('/cb', { k1: randomK1, sig: sig.sig, key: sig.key });
+    const res = await getJSON(cbUrl({ k1: randomK1, sig: sig.sig, key: sig.key }));
     expect(res.status).toBe(400);
     expect(res.body.reason).toMatch(/unknown|already-used/);
   });
 
-  it('POST /cb replay (already-used k1) returns ERROR', async () => {
+  it('GET /cb replay (already-used k1) returns ERROR', async () => {
     const ch = await getJSON('/challenge');
     const sig = createValidSig(ch.body.k1);
-    await postJSON('/cb', { k1: ch.body.k1, sig: sig.sig, key: sig.key });
-    const res = await postJSON('/cb', { k1: ch.body.k1, sig: sig.sig, key: sig.key });
+    await getJSON(cbUrl({ k1: ch.body.k1, sig: sig.sig, key: sig.key }));
+    const res = await getJSON(cbUrl({ k1: ch.body.k1, sig: sig.sig, key: sig.key }));
     expect(res.status).toBe(400);
     expect(res.body.reason).toMatch(/unknown|already-used/);
   });
 
-  it('POST /cb missing k1 returns 400', async () => {
-    const res = await postJSON('/cb', { sig: 'aa', key: 'bb' });
+  it('GET /cb missing k1 returns 400', async () => {
+    const res = await getJSON('/cb?sig=aa&key=bb');
     expect(res.status).toBe(400);
     expect(res.body.reason).toMatch(/missing/);
   });
 
-  it('POST /cb missing sig returns 400', async () => {
+  it('GET /cb missing sig returns 400', async () => {
     const ch = await getJSON('/challenge');
-    const res = await postJSON('/cb', { k1: ch.body.k1, key: 'bb' });
+    const res = await getJSON(`/cb?k1=${ch.body.k1}&key=bb`);
     expect(res.status).toBe(400);
   });
 
-  it('POST /cb missing key returns 400', async () => {
+  it('GET /cb missing key returns 400', async () => {
     const ch = await getJSON('/challenge');
-    const res = await postJSON('/cb', { k1: ch.body.k1, sig: 'aa' });
+    const res = await getJSON(`/cb?k1=${ch.body.k1}&sig=aa`);
     expect(res.status).toBe(400);
   });
 
-  it('POST /cb with invalid DER hex returns 400', async () => {
+  it('GET /cb with invalid DER hex returns 400', async () => {
     const ch = await getJSON('/challenge');
     const sig = createValidSig(ch.body.k1);
-    const res = await postJSON('/cb', { k1: ch.body.k1, sig: 'zzzzzzzz', key: sig.key });
+    const res = await getJSON(cbUrl({ k1: ch.body.k1, sig: 'zzzzzzzz', key: sig.key }));
     expect(res.status).toBe(400);
   });
 
-  it('POST /cb with tampered signature returns ERROR', async () => {
+  it('GET /cb with tampered signature returns ERROR', async () => {
     const ch = await getJSON('/challenge');
     const sig = createValidSig(ch.body.k1);
     const chars = sig.sig.split('');
     chars[10] = chars[10] === 'a' ? 'b' : 'a';
-    const res = await postJSON('/cb', { k1: ch.body.k1, sig: chars.join(''), key: sig.key });
+    const res = await getJSON(cbUrl({ k1: ch.body.k1, sig: chars.join(''), key: sig.key }));
     expect(res.status).toBe(400);
     expect(res.body.reason).toMatch(/verification/);
   });
 
-  it('POST /cb with mismatched key returns ERROR', async () => {
+  it('GET /cb with mismatched key returns ERROR', async () => {
     const ch = await getJSON('/challenge');
     const sig = createValidSig(ch.body.k1);
     const wrongKey = createValidSig(ch.body.k1);
-    const res = await postJSON('/cb', { k1: ch.body.k1, sig: sig.sig, key: wrongKey.key });
+    const res = await getJSON(cbUrl({ k1: ch.body.k1, sig: sig.sig, key: wrongKey.key }));
     expect(res.status).toBe(400);
     expect(res.body.reason).toMatch(/verification/);
   });
 
-  it('POST /cb with wrong-length pubkey returns 400', async () => {
+  it('GET /cb with wrong-length pubkey returns 400', async () => {
     const ch = await getJSON('/challenge');
     const sig = createValidSig(ch.body.k1);
-    const res = await postJSON('/cb', { k1: ch.body.k1, sig: sig.sig, key: 'aa' });
+    const res = await getJSON(cbUrl({ k1: ch.body.k1, sig: sig.sig, key: 'aa' }));
     expect(res.status).toBe(400);
   });
 
   it('challenge k1 is consumed on successful auth', async () => {
     const ch = await getJSON('/challenge');
     const sig = createValidSig(ch.body.k1);
-    const authRes = await postJSON('/cb', { k1: ch.body.k1, sig: sig.sig, key: sig.key });
+    const authRes = await getJSON(cbUrl({ k1: ch.body.k1, sig: sig.sig, key: sig.key }));
     expect(authRes.body.status).toBe('OK');
-    const replayRes = await postJSON('/cb', { k1: ch.body.k1, sig: sig.sig, key: sig.key });
+    const replayRes = await getJSON(cbUrl({ k1: ch.body.k1, sig: sig.sig, key: sig.key }));
     expect(replayRes.status).toBe(400);
   });
 

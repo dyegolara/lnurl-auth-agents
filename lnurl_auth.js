@@ -7,7 +7,8 @@
 //      32-byte hex challenge) and optionally `action`.
 //   2. sign sha256? NO: sign the raw 32-byte `k1` with a secp256k1 linking key
 //      (DER-encoded ECDSA signature).
-//   3. POST the service URL with JSON body { k1, sig, key } (and optionally t).
+//   3. GET the callback URL with query params: existing params (k1, tag, action)
+//      plus sig=<DER-hex> and key=<compressed-pubkey-hex>.
 //   4. Server responds {"status":"OK"} or {"status":"ERROR","reason":...}.
 //
 // No Lightning node, no payment, no cost.
@@ -83,9 +84,9 @@ Options:
   --generate             force-generate a new master key and persist it
   --single-key           use one key for all services (no per-domain derivation)
   --no-per-domain        alias of --single-key
-  --no-t                 do not include "t" in the callback POST body
+  --no-t                 (ignored; kept for backward compatibility)
   --action <a>           assert/override action: register|login|link|auth
-  --callback <url>       override the URL the signature is POSTed to
+  --callback <url>       override the base URL for the auth GET callback
   --dry-run              decode, fetch k1, sign — but do NOT submit the callback
   --timeout <ms>         HTTP request timeout in ms (default: 15000)
   --json                 emit machine-readable JSON
@@ -329,20 +330,23 @@ async function main() {
   log('Linking pubkey:', keyHex);
   log('Action:', action || '(none)');
 
-  // Build submission URL: preserve existing query params but remove k1/sig/key to avoid duplication with POST body.
+  // Build GET callback URL per LUD-04: preserve existing query params (k1, tag,
+  // action, etc.), then append sig and key.
   const rawCallbackUrl = opts.callback || serviceUrl;
   const callbackUrlObj = new URL(rawCallbackUrl);
-  callbackUrlObj.searchParams.delete('k1');
+  // When --callback overrides the URL, k1 may not be present; add it.
+  if (!callbackUrlObj.searchParams.has('k1')) callbackUrlObj.searchParams.set('k1', k1);
+  // Avoid duplicates in case sig/key appear in the URL already.
   callbackUrlObj.searchParams.delete('sig');
   callbackUrlObj.searchParams.delete('key');
+  callbackUrlObj.searchParams.set('sig', sigHex);
+  callbackUrlObj.searchParams.set('key', keyHex);
   const callbackBase = callbackUrlObj.toString();
-  const postBody = { k1, sig: sigHex, key: keyHex };
-  if (action && !opts.noT) postBody.t = action;
 
   if (opts.json) {
     console.log(JSON.stringify({
       serviceUrl, domain, k1, action: action || null,
-      linkingPubkey: keyHex, callbackUrl: callbackBase, method: 'POST',
+      linkingPubkey: keyHex, callbackUrl: callbackBase, method: 'GET',
       dryRun: !!opts.dryRun,
     }, null, 2));
   } else {
@@ -355,9 +359,9 @@ async function main() {
     process.exit(0);
   }
 
-  // 5) Submit the callback via POST and report the server response.
+  // 5) Submit the callback via GET per LUD-04 and report the server response.
   log('Submitting signature to service...');
-  const resp = await httpPost(callbackBase, postBody, { timeout });
+  const resp = await httpGet(callbackBase, { timeout });
   let json = null;
   try { json = JSON.parse(resp.body); } catch (e) { /* non-JSON */ }
 

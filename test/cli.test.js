@@ -121,7 +121,7 @@ describe('CLI', () => {
     expect(parsed.linkingPubkey).toBeTruthy();
     expect(parsed.callbackUrl).toBeTruthy();
     expect(parsed.dryRun).toBe(false);
-    expect(parsed.method).toBe('POST');
+    expect(parsed.method).toBe('GET');
   });
 
   it('--json with --dry-run', async () => {
@@ -266,8 +266,8 @@ describe('CLI', () => {
     const r = await runCLI([ch.lnurl, '--json', '--callback', `http://127.0.0.1:${PORT}/cb`], env);
     expect(r.status).toBe(0);
     const parsed = parseFirstJson(r.stdout);
-    expect(parsed.callbackUrl).toBe(`http://127.0.0.1:${PORT}/cb`);
-    expect(parsed.method).toBe('POST');
+    expect(parsed.callbackUrl).toContain(`http://127.0.0.1:${PORT}/cb`);
+    expect(parsed.method).toBe('GET');
     // Verify k1 was actually consumed by the mock server
     const replay = await runCLI([ch.lnurl, '--callback', `http://127.0.0.1:${PORT}/cb`], env);
     expect(replay.status).toBe(3);
