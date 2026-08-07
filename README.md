@@ -65,10 +65,10 @@ Use `--single-key` to share one key across all services.
 ## Requirements
 
 - **Node.js v20.19+** (v22 recommended; required by the current secp256k1 dependency).
-- All dependencies are **vendored** in `node_modules/` — works offline at runtime.
+- Dependencies are installed via `npm install` and are not bundled with the repository.
   - [`@noble/secp256k1`](https://github.com/paulmillr/noble-secp256k1) (small, zero-dependency ECDSA)
   - [`bech32`](https://github.com/bitcoinjs/bech32) (lnurl decode/encode)
-- To refresh vendored deps: `npm install`.
+- To install deps: `npm install`.
 
 ---
 

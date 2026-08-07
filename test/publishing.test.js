@@ -16,6 +16,9 @@ function getJSON(url) {
       let body = '';
       res.on('data', (chunk) => { body += chunk; });
       res.on('end', () => {
+        if (res.statusCode !== 200) {
+          return reject(new Error(`HTTP ${res.statusCode}: ${body}`));
+        }
         try { resolve(JSON.parse(body)); } catch (error) { reject(error); }
       });
     }).on('error', reject);
@@ -23,7 +26,7 @@ function getJSON(url) {
 }
 
 function runPortable(args, keyfile) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [PORTABLE_HELPER, ...args], {
       cwd: ROOT,
       env: { ...process.env, LNURL_AUTH_KEYFILE: keyfile },
@@ -32,6 +35,7 @@ function runPortable(args, keyfile) {
     let stderr = '';
     child.stdout.on('data', (chunk) => { stdout += chunk; });
     child.stderr.on('data', (chunk) => { stderr += chunk; });
+    child.on('error', reject);
     child.on('close', (status) => resolve({ status, stdout, stderr }));
   });
 }
@@ -67,7 +71,7 @@ describe('publishing artifacts', () => {
 
   beforeAll(async () => {
     server = start(PORT);
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => server.once('listening', resolve));
   });
 
   afterAll(() => server.close());
