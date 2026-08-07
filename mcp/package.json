@@ -1,16 +1,23 @@
 {
   "name": "lnurl-auth-mcp",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "MCP server for LNURL-auth (LUD-04) — Sign in with Lightning, no wallet required",
   "private": true,
   "license": "MIT",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "type": "commonjs",
   "main": "server.js",
   "bin": {
     "lnurl-auth-mcp": "server.js"
   },
+  "overrides": {
+    "fast-uri": "3.1.5",
+    "hono": "4.13.0"
+  },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "zod": "^3.25.0"
   }
 }

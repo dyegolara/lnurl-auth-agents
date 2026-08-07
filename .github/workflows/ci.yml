@@ -10,4 +10,8 @@ jobs:
           node-version: 22
       - run: npm ci
       - run: npm ci --prefix mcp
+      - run: npm audit --omit=dev
+      - run: npm audit --prefix mcp --omit=dev
+      - run: node --check skills/lnurl-auth/scripts/lnurl_auth.js
+      - run: npm pack --dry-run
       - run: npm test

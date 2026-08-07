@@ -1,12 +1,18 @@
 ---
 name: lnurl-auth
-description: "LNURL-auth (LUD-04) signer for LLM coding agents (OpenClaw, Codex, Cursor, Claude Code, OpenCode, ...). Auth-only login via Lightning — no node, no cost. Given an lnurl1... string from a 'Sign in with Lightning' QR/link, decode it, sign the k1 challenge with a secp256k1 linking key, and submit the signature to the service callback. Use whenever a site asks to authenticate via LNURL-auth / Lightning login."
-license: MIT
+description: "LNURL-auth (LUD-04) signer for LLM coding agents (OpenClaw, Codex, Cursor, Claude Code, OpenCode, ...). Auth-only login via Lightning - no node, no cost. Given an lnurl1... string from a 'Sign in with Lightning' QR/link, decode it, sign the k1 challenge with a secp256k1 linking key, and submit the signature to the service callback. Use whenever a site asks to authenticate via LNURL-auth / Lightning login."
+version: 1.2.0
 homepage: https://github.com/dyegolara/lnurl-auth-agents
 metadata:
   author: dyegolara
-  version: 1.1.0
   tags: [lnurl, lightning, auth, login, lud-04, secp256k1]
+  openclaw:
+    requires:
+      bins: [node]
+    envVars:
+      - name: LNURL_AUTH_KEYFILE
+        required: false
+        description: Optional path for the persistent 32-byte master secret.
 ---
 
 # lnurl-auth (LUD-04)
@@ -18,8 +24,7 @@ via a GET to the callback. No invoice, no payment, no Lightning node.
 
 ## When to use
 
-- A site shows "Sign in with Lightning" / LNURL-auth (e.g. bitsimp.com,
-  lightninglogin.live).
+- A site shows "Sign in with Lightning" / LNURL-auth.
 - You are handed an `lnurl1...` string (from a QR code, a link, or pasted text).
 - You must NOT spend money or run a Lightning node.
 
@@ -47,7 +52,7 @@ node <skill_dir>/lnurl_auth.js <lnurl1...>
 | `--keyout <path>` | Where to persist a generated master secret (default `~/.config/lnurl-auth/master.key`) |
 | `--generate` | Force-generate a new master secret, **overwriting** any existing keyfile |
 | `--single-key` | Use one global linking key for all services (no per-domain derivation) |
-| `--no-t` | Omit `&t=<action>` from the callback |
+| `--no-t` | Compatibility option; the callback does not add a `t` parameter |
 | `--action <a>` | Assert/override action: `register`, `login`, `link`, or `auth` |
 | `--callback <url>` | Override the URL the signature is submitted to |
 | `--dry-run` | Decode, fetch `k1`, sign — but **do not** submit the callback |
@@ -68,12 +73,12 @@ node <skill_dir>/lnurl_auth.js <lnurl1...>
 
 ## Protocol flow (LUD-04)
 
-1. `lnurl1...` is `bech32("lnurl", utf8(serviceURL))`. Decode → URL containing
+1. `lnurl1...` is `bech32("lnurl", utf8(serviceURL))`. Decode -> URL containing
    `k1` (32-byte hex challenge) and optionally `action`.
 2. Sign the **raw 32-byte `k1`** with the linking private key using ECDSA
    (secp256k1, `prehash: false`), then **DER-encode** the signature.
 3. GET the service URL with `&sig=<hex DER sig>&key=<hex compressed pubkey>`
-   (and `&t=<action>` when known) appended.
+   appended while preserving existing query parameters.
 4. Server verifies the signature and responds `{"status":"OK"}` or
    `{"status":"ERROR","reason":"..."}`.
 
@@ -115,11 +120,12 @@ node <skill_dir>/lnurl_auth.js "lnurl1..." --generate
 
 ## Dependencies
 
-- **Node.js** v18+ (v22 recommended).
+- **Node.js** v20.19+ (v22 recommended).
 - Two tiny pure-JS npm packages, **vendored** inside `node_modules/`:
-  - `@noble/secp256k1` (sign/verify, audited, zero-dependency)
+  - `@noble/secp256k1` (sign/verify, small, zero-dependency)
   - `bech32` (lnurl decode/encode)
-- No native build, no network at runtime (except the callback GET).
+- No native build; network calls are limited to the optional challenge GET and
+  final callback GET.
 - No cost, no Lightning node.
 
 ### Installing / refreshing vendored deps
@@ -135,10 +141,10 @@ A local mock LUD-04 server validates the full sign → submit → verify roundtr
 
 ```bash
 cd <skill_dir>
-node selftest.js
+npm test
 ```
 
-Covers: happy path, replay rejecton, dry-run safety, tampered `k1` rejection,
+Covers: happy path, replay rejection, dry-run safety, tampered `k1` rejection,
 per-domain key stability, `--generate` overwrite, and odd-hex validation.
 
 ## Real-world verification
@@ -157,5 +163,5 @@ Verified against two public services:
 - The default linking key is per-domain derived from a local master secret —
   it is **not** the same identity a user's phone wallet would produce. Sufficient
   for agent auth.
-- Requires network egress to the service's callback URL at submit time only
+- Requires network egress for the optional challenge GET and final callback GET
   (no payment, no Lightning node).

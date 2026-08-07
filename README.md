@@ -1,6 +1,6 @@
 # lnurl-auth — LNURL-auth (LUD-04) signer for LLM coding agents
 
-[![CI](https://github.com/dyegolara/lnurl-auth-agents/actions/workflows/ci.yml/badge.svg)](https://github.com/dyegolara/lnurl-auth-agents/actions/workflows/ci.yml)
+[![CI](https://github.com/dyegolara/lnurl-auth-agents/actions/workflows/ci.yml/badge.svg)](https://github.com/dyegolara/lnurl-auth-agents/actions/workflows/ci.yml) [![skills.sh](https://skills.sh/b/dyegolara/lnurl-auth-agents)](https://skills.sh/dyegolara/lnurl-auth-agents)
 
 Authenticate to any LNURL-auth service ("Sign in with Lightning") **entirely
 client-side** — no Lightning node, no wallet, no payment, no cost.
@@ -34,7 +34,7 @@ sequenceDiagram
     end
 
     CLI->>CLI: 3. Sign raw k1 with secp256k1 → DER signature
-    CLI->>Service: POST <callback> (JSON body: {k1, sig, key, t})
+    CLI->>Service: GET <callback> (query: k1, sig, key)
     Service-->>CLI: {"status":"OK"} or {"status":"ERROR","reason":"..."}
     CLI-->>Agent: exit 0 / 3 (OK / ERROR)
 ```
@@ -64,9 +64,9 @@ Use `--single-key` to share one key across all services.
 
 ## Requirements
 
-- **Node.js v18+** (v22 recommended).
+- **Node.js v20.19+** (v22 recommended; required by the current secp256k1 dependency).
 - All dependencies are **vendored** in `node_modules/` — works offline at runtime.
-  - [`@noble/secp256k1`](https://github.com/paulmillr/noble-secp256k1) (audited, zero-dependency ECDSA)
+  - [`@noble/secp256k1`](https://github.com/paulmillr/noble-secp256k1) (small, zero-dependency ECDSA)
   - [`bech32`](https://github.com/bitcoinjs/bech32) (lnurl decode/encode)
 - To refresh vendored deps: `npm install`.
 
@@ -97,8 +97,14 @@ On first use, a 32-byte master secret is generated and saved to
 ## Agent skill installation
 
 `lnurl-auth` follows the [Agent Skills](https://agentskills.io) open standard. The
-`SKILL.md` file uses YAML frontmatter (`name`, `description`, `license`, `metadata`)
+`SKILL.md` file uses YAML frontmatter (`name`, `description`, `metadata`)
 supported by all major LLM coding agents.
+
+For the standard skills CLI, install the repository after it is public:
+
+```bash
+npx skills add dyegolara/lnurl-auth-agents --skill lnurl-auth
+```
 
 ### Claude Code
 
@@ -226,9 +232,9 @@ as structured JSON.
 | `--keyout <path>` | Where to persist a generated master secret (default: `~/.config/lnurl-auth/master.key`) |
 | `--generate` | Force-generate a new master secret, **overwriting** any existing keyfile |
 | `--single-key` | Use one global linking key for all services (no per-domain derivation) |
-| `--no-t` | Omit `&t=<action>` from the callback URL |
+| `--no-t` | Compatibility option; the callback does not add a `t` parameter |
 | `--action <a>` | Assert/override action: `register`, `login`, `link`, or `auth` |
-| `--callback <url>` | Override the URL the signature is POSTed to |
+| `--callback <url>` | Override the URL the signature is sent to via GET |
 | `--dry-run` | Decode, fetch `k1`, sign — but **do not** submit the callback |
 | `--timeout <ms>` | HTTP request timeout in ms (default: 15000) |
 | `--json` | Emit machine-readable JSON to stdout |
@@ -256,7 +262,7 @@ const k1Bytes = Buffer.from(k1, 'hex');
 const compact = signCompact(k1Bytes, linkingPriv);
 const derSigHex = Buffer.from(encode(compact)).toString('hex');
 
-// POST <serviceUrl> with JSON body { k1, sig, key, t }
+// GET <serviceUrl> with query parameters { k1, sig, key }
 ```
 
 See [`examples/programmatic.js`](./examples/programmatic.js) for a full example.
@@ -281,12 +287,12 @@ All tests are **offline**, cost-free, and require no Lightning node.
 
 | Suite | What it tests | Count |
 |---|---|---|
-| `selftest.js` | End-to-end roundtrip against a local mock LUD-04 server | 14 tests |
-| `test/unit.js` | bech32, DER, secp256k1, key derivation, official vectors | 8 tests |
+| `test/selftest.test.js` | End-to-end roundtrip against a local mock LUD-04 server | 7 tests |
+| `test/unit.test.js` | bech32, DER, secp256k1, key derivation, official vectors | 8 tests |
 
 ### What the tests cover
 
-**`selftest.js`** (mock server — 14 tests)
+**`test/selftest.test.js`** (mock server — 7 tests)
 
 - Happy-path sign → submit → verify roundtrip
 - Replay protection (k1 consumed after first use)
@@ -296,7 +302,7 @@ All tests are **offline**, cost-free, and require no Lightning node.
 - `--generate` properly overwrites existing keyfile
 - Odd-length hex k1 is rejected (no silent corruption)
 
-**`test/unit.js`** (offline — 8 tests)
+**`test/unit.test.js`** (offline — 8 tests)
 
 - bech32 roundtrip (random URL)
 - bech32 official LUD-01 vector

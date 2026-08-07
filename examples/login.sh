@@ -6,7 +6,7 @@
 #
 # Steps:
 #   1. Dry-run to see the decoded service URL + would-be callback (no submit).
-#   2. Real login (submits the signature to the service via POST).
+#   2. Real login (submits the signature to the service via GET).
 set -euo pipefail
 
 SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -22,6 +22,6 @@ echo "== Dry-run (decode + sign, no submit) =="
 node "$SKILL_DIR/lnurl_auth.js" "$LNURL" --dry-run --json
 
 echo
-echo "== Real login (submits signature to the service via POST) =="
+echo "== Real login (submits signature to the service via GET) =="
 node "$SKILL_DIR/lnurl_auth.js" "$LNURL" --json
 echo "exit code: $?"

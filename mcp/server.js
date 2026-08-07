@@ -8,7 +8,7 @@ const { performHandshake } = require('../lib/handshake');
 
 const server = new McpServer({
   name: 'lnurl-auth',
-  version: '1.1.0',
+  version: '1.2.0',
   description: 'LNURL-auth (LUD-04) signer — performs "Sign in with Lightning" handshake without a Lightning node or wallet.',
 });
 

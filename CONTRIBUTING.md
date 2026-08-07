@@ -26,7 +26,7 @@ pull request makes review easier.
 
 ## Code style
 
-- JavaScript (Node.js v18+)
+- JavaScript (Node.js v20.19+)
 - 2-space indentation (no tabs)
 - Follow existing patterns in `lib/`, `test/`, and the main script
 
@@ -39,7 +39,6 @@ npm install
 # Run tests
 npm test
 
-# Run a specific test suite
-node selftest.js
-node test/unit.js
+# Run specific test suites
+npx vitest run test/unit.test.js test/selftest.test.js
 ```

@@ -57,7 +57,8 @@ node <path_to_skill>/lnurl_auth.js "<lnurl1...>" --json
 ```
 
 The `--json` flag gives machine-readable output you can parse. The signature
-is submitted via **POST** with a JSON body `{ k1, sig, key }` to the service.
+is submitted via **GET** with `k1`, `sig`, and `key` query parameters to the
+service callback, as required by LUD-04.
 
 ### Scripting with jq
 
@@ -93,7 +94,7 @@ Progress/log messages go to **stderr**. The server response goes to **stdout**.
   "action": "login",
   "linkingPubkey": "02abcdef...",
   "callbackUrl": "https://example.com/cb",
-  "method": "POST",
+  "method": "GET",
   "dryRun": false
 }
 ```
@@ -157,7 +158,7 @@ const k1 = new URL(url).searchParams.get('k1');
 const k1Bytes = Buffer.from(k1, 'hex');
 const sig = signCompact(k1Bytes, priv);
 const derHex = Buffer.from(encode(sig)).toString('hex');
-// POST <callback> with JSON body { k1, sig, key, t }
+// GET <callback>?k1=...&sig=...&key=...
 ```
 
 ## Self-test
@@ -168,8 +169,7 @@ Run the smoke test to confirm everything works:
 cd <skill_dir>
 npm test
 # or individually:
-node selftest.js     # e2e against local mock (14 tests)
-node test/unit.js    # crypto unit tests (8 tests)
+npx vitest run test/unit.test.js test/selftest.test.js
 ```
 
 All tests are offline and cost-free.
@@ -179,6 +179,6 @@ All tests are offline and cost-free.
 - This is **auth-only** — no payments, no invoices, no Lightning node.
 - The derived key is local to this machine; it is **not** the same as a user's
   phone wallet identity (those use BIP32/LUD-05 derivation from a seed phrase).
-- The only network call is the final POST to the service's callback URL.
+- Network calls are limited to the optional challenge GET and final callback GET.
 - The `k1` challenge is a one-time nonce — once submitted, it cannot be reused
   (replay protection enforced by the server).
