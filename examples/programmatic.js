@@ -2,7 +2,7 @@
 // Example: use the lnurl-auth library functions directly from your own code.
 //
 // This shows the building blocks (no CLI, no spawn). All crypto is local;
-// the only network call is the final POST to the service callback.
+// network calls are limited to the challenge GET and final callback GET.
 
 const { decodeLnurl } = require('../lib/bech32');
 const { genPrivateKey, getPublicKey, signCompact, verifyCompact, deriveLinkingKey } = require('../lib/secp');

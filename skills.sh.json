@@ -1,0 +1,11 @@
+{
+  "$schema": "https://skills.sh/schemas/skills.sh.schema.json",
+  "notGrouped": "bottom",
+  "groupings": [
+    {
+      "title": "Lightning Authentication",
+      "description": "Authenticate to LNURL-auth services without a wallet or payment.",
+      "skills": ["lnurl-auth"]
+    }
+  ]
+}
