@@ -13,3 +13,6 @@ mcp/node_modules/
 .DS_Store
 *.log
 *.key
+
+# ClawHub Plugin Inspector output
+reports/

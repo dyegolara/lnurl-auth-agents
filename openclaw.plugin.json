@@ -1,0 +1,11 @@
+{
+  "id": "lnurl-auth",
+  "name": "LNURL Auth",
+  "description": "LNURL-auth (LUD-04) — Sign in with Lightning for LLM agents. No wallet, no node, no payment required.",
+  "version": "1.4.0",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

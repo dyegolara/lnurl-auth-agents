@@ -1,7 +1,7 @@
 ---
 name: lnurl-auth
 description: "LNURL-auth (LUD-04) signer for LLM coding agents (OpenClaw, Codex, Cursor, Claude Code, OpenCode, ...). Auth-only login via Lightning - no node, no cost. Given an lnurl1... string from a 'Sign in with Lightning' QR/link, decode it, sign the k1 challenge with a secp256k1 linking key, and submit the signature to the service callback. Use whenever a site asks to authenticate via LNURL-auth / Lightning login."
-version: 1.3.0
+version: 1.4.0
 homepage: https://github.com/dyegolara/lnurl-auth-agents
 metadata:
   author: dyegolara

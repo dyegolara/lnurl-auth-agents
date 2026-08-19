@@ -76,7 +76,7 @@ describe('MCP server', () => {
         params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'test', version: '1.0' } },
       });
       expect(resp.result.serverInfo.name).toBe('lnurl-auth');
-      expect(resp.result.serverInfo.version).toBe('1.3.0');
+      expect(resp.result.serverInfo.version).toBe('1.4.0');
       expect(resp.result.capabilities.tools.listChanged).toBe(true);
     } finally {
       child.kill();

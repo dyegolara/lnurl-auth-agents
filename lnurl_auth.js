@@ -27,7 +27,7 @@ const DEFAULT_KEYFILE = process.env.LNURL_AUTH_KEYFILE ||
   path.join(os.homedir(), '.config', 'lnurl-auth', 'master.key');
 
 const ACTIONS = new Set(['register', 'login', 'link', 'auth']);
-const VERSION = '1.3.0';
+const VERSION = '1.4.0';
 const USER_AGENT = `lnurl-auth/${VERSION} (+https://github.com/dyegolara/lnurl-auth-agents)`;
 const MAX_REDIRECTS = 5;
 const DEFAULT_TIMEOUT = 15000;

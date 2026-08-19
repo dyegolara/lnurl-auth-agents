@@ -4,7 +4,7 @@
 const readline = require('readline');
 const { performHandshake } = require('../lib/handshake');
 
-const VERSION = '1.3.0';
+const VERSION = '1.4.0';
 const SERVER_NAME = 'lnurl-auth';
 const SUPPORTED_PROTOCOL_VERSIONS = ['2024-11-05', '2025-06-18'];
 const DEFAULT_PROTOCOL_VERSION = '2024-11-05';
