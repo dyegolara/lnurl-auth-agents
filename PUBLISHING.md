@@ -336,7 +336,7 @@ openclaw skills verify @<publisher>/lnurl-auth --card
 
 ### Acciones externas que quedan para el mantenedor
 
-- [ ] Push del repositorio publico con estos cambios.
+- [x] Push del repositorio publico con estos cambios.
 - [ ] PR a `openclaw/agent-skills`.
 - [ ] PR a `anthropics/skills`.
 - [ ] Validar con `claude plugin validate . --strict` desde Claude Code instalado.
