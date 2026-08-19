@@ -1,15 +1,8 @@
-# Dependencies are intentionally VENDORED (committed) under node_modules/
-# so the skill runs fully offline at runtime with no `npm install`.
-# Only the two pure-JS runtime packages are kept; everything else ignored.
-node_modules/*
-!node_modules/@noble/
-!node_modules/@noble/secp256k1/
-!node_modules/@noble/secp256k1/*
-!node_modules/bech32/
-!node_modules/bech32/*
+# Dependencies are run-time vendored under lib/vendor/ (no `npm install`
+# needed at runtime). node_modules is only for dev tooling (vitest, bech32
+# reference) and must never be committed.
+node_modules/
 
-# MCP server has its own dependencies — not vendored, installed with `npm install`
-mcp/node_modules/
 .DS_Store
 *.log
 *.key

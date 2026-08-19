@@ -1,6 +1,6 @@
 {
   "name": "lnurl-auth",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "LNURL-auth (LUD-04) signer for LLM agents",
   "main": "lnurl_auth.js",
   "files": [
@@ -35,14 +35,11 @@
     "url": "https://github.com/dyegolara/lnurl-auth-agents.git"
   },
   "type": "commonjs",
-  "dependencies": {
-    "@noble/secp256k1": "^3.1.0",
-    "bech32": "^2.0.0"
-  },
   "bin": {
     "lnurl-auth": "lnurl_auth.js"
   },
   "devDependencies": {
+    "bech32": "^2.0.0",
     "vitest": "^4.1.10"
   }
 }

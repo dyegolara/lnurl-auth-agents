@@ -16,9 +16,9 @@ contribuciones en cada plataforma y verificar la indexacion remota.
 ## Cambios realizados
 
 - `package.json` ahora tiene `files`, `engines.node` (`>=20.19.0`) y version
-  `1.4.0`.
+  `1.4.1`.
 - `package-lock.json`, MCP, plugins y frontmatter usan la misma version
-  `1.4.0`.
+  `1.4.1`.
 - `skills.sh.json` usa el schema actual de skills.sh (`groupings`, no el
   formato obsoleto `skills: [...]`).
 - `skills/lnurl-auth/` es un bundle autonomo para OpenClaw/ClawHub, con
@@ -43,13 +43,13 @@ contribuciones en cada plataforma y verificar la indexacion remota.
 | `npm ci` | OK |
 | `npm audit --omit=dev --json` | OK - 0 vulnerabilidades runtime |
 | `npm test` | OK - 10 archivos, 164 tests |
-| `npm pack --dry-run --json` | OK - `lnurl-auth@1.4.0`, 10 archivos intencionados |
+| `npm pack --dry-run --json` | OK - `lnurl-auth@1.4.1`, 10 archivos intencionados |
 | `node --check` sobre CLI, handshake, MCP y helper portable | OK |
 | `git diff --check` | OK |
 | `openclaw/agent-skills/scripts/validate-skills` en checkout temporal oficial | OK - 9 skills |
 | `scripts/validate-skills.test.py` en checkout temporal oficial | OK - 9 tests |
 | `npx skills@latest add . --list` | OK - descubre 1 skill: `lnurl-auth` |
-| `clawhub skill publish ./skills/lnurl-auth ... --dry-run --json` | OK - `would-publish`, version `1.4.0`, 2 archivos |
+| `clawhub skill publish ./skills/lnurl-auth ... --dry-run --json` | OK - `would-publish`, version `1.4.1`, 2 archivos |
 | `claude plugin validate . --strict` | No ejecutable en este entorno: el binario nativo de Claude Code no esta instalado |
 
 El ultimo punto no es un gap del proyecto. Antes del envio a Claude Community,
@@ -170,7 +170,7 @@ Fuentes consultadas:
 
 | Requisito | Estado | Evidencia |
 |---|---|---|
-| `.claude-plugin/plugin.json` | LISTO | Metadata, version `1.4.0`, MIT y MCP server |
+| `.claude-plugin/plugin.json` | LISTO | Metadata, version `1.4.1`, MIT y MCP server |
 | Skill compatible | LISTO | `SKILL.md` en la raiz con frontmatter valido |
 | `.mcp.json` | LISTO | Servidor stdio `node mcp/server.js`, sin dependencias npm |
 | MCP server funcional | LISTO | Tests MCP y roundtrip local |
@@ -222,7 +222,7 @@ Fuentes consultadas:
 | `files` restrictivo | LISTO | 7 entradas intencionadas |
 | Shebang ejecutable | LISTO | `lnurl_auth.js` mode `755` |
 | README y LICENSE | LISTO | Incluidos automaticamente y confirmados en pack |
-| Version sincronizada | LISTO | `1.4.0` en package, lock, plugins, MCP y skills |
+| Version sincronizada | LISTO | `1.4.1` en package, lock, plugins, MCP y skills |
 | Paquete construible | LISTO | `npm pack --dry-run`: 11 archivos, sin tests ni docs internos |
 | Cuenta/login de npm | PENDIENTE EXTERNO | No se ejecuto `npm login` |
 | Publicacion en registry | PENDIENTE EXTERNO | `npm view lnurl-auth` devuelve 404 porque aun no se publico |
@@ -242,7 +242,7 @@ plataformas correspondientes.
 npm login
 npm publish
 npm view lnurl-auth version
-npm install -g lnurl-auth@1.4.0
+npm install -g lnurl-auth@1.4.1
 lnurl-auth --help
 ```
 
@@ -283,7 +283,7 @@ excluye, asi que no altera el tarball.
 | Archivos de soporte regulares | LISTO | `scripts/lnurl_auth.js` |
 | Metadata runtime de OpenClaw | LISTO | `metadata.openclaw.requires.bins` y `envVars` |
 | Bundle menor a los limites | LISTO | 2 archivos en dry-run |
-| Preflight CLI | LISTO | `would-publish`, version `1.4.0`, sin token |
+| Preflight CLI | LISTO | `would-publish`, version `1.4.1`, sin token |
 | Cuenta/login ClawHub | PENDIENTE EXTERNO | No se ejecuto `clawhub login` |
 | Publicacion y scan remoto | PENDIENTE EXTERNO | No se hizo upload |
 
@@ -295,7 +295,7 @@ Este comando ya se ejecuto y no publica nada:
 npx --yes clawhub skill publish ./skills/lnurl-auth \
   --slug lnurl-auth \
   --name "LNURL Auth" \
-  --version 1.4.0 \
+  --version 1.4.1 \
   --categories security \
   --topics lightning,lnurl,authentication \
   --dry-run --json
@@ -310,7 +310,7 @@ clawhub whoami
 clawhub skill publish ./skills/lnurl-auth \
   --slug lnurl-auth \
   --name "LNURL Auth" \
-  --version 1.4.0 \
+  --version 1.4.1 \
   --categories security \
   --topics lightning,lnurl,authentication
 ```
@@ -332,7 +332,7 @@ capacidades nativas.
 
 ### Requisitos
 
-- `openclaw.plugin.json` en la raiz (agregado en v1.4.0) — lo exige
+- `openclaw.plugin.json` en la raiz (agregado en v1.4.1) — lo exige
   `clawhub package publish` para todo family.
 - `.mcp.json` declara el servidor stdio `node mcp/server.js` (sin dependencias).
 - `clawhub package validate .` sin issues (Plugin Inspector).
@@ -349,7 +349,7 @@ clawhub package publish . \
 ### Unica accion manual
 
 ```bash
-clawhub package publish dyegolara/lnurl-auth-agents@v1.4.0 \
+clawhub package publish dyegolara/lnurl-auth-agents@v1.4.1 \
   --family bundle-plugin \
   --bundle-format claude \
   --host-targets openclaw \

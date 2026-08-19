@@ -1,0 +1,16 @@
+# ClawHub bundle-plugin publish: ship only the runtime + manifests.
+# Dev/test and docs files are excluded from the distributed bundle.
+test/
+examples/
+contrib/
+.github/
+mock_server.js
+vitest.config.js
+package-lock.json
+PUBLISHING.md
+CONTRIBUTING.md
+AGENTS.md
+PRIVACY.md
+skills.sh.json
+.gitignore
+reports/

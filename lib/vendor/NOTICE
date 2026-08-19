@@ -1,0 +1,9 @@
+Vendored dependencies (MIT), self-contained so the CLI, the MCP server and the
+ClawHub bundle run without `npm install`:
+
+- `secp256k1.cjs` — from `@noble/secp256k1` v3 (Paul Miller), converted to
+  CommonJS. https://github.com/paulmillr/noble-secp256k1 — MIT
+- `bech32.cjs` — from `bech32` v2 (Bitcoin BIPs org), CommonJS distribution.
+  https://github.com/bitcoinjs/bech32 — MIT
+
+License texts: see the respective `LICENSE` files under the original packages.
