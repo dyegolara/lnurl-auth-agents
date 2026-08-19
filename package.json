@@ -1,13 +1,12 @@
 {
   "name": "lnurl-auth",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "LNURL-auth (LUD-04) signer for LLM agents",
   "main": "lnurl_auth.js",
   "files": [
     "lnurl_auth.js",
     "lib/",
     "mcp/server.js",
-    "mcp/package.json",
     "SKILL.md",
     "README.md",
     "LICENSE"
