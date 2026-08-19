@@ -78,13 +78,12 @@ describe('publishing artifacts', () => {
 
   it('limits the npm artifact to runtime and distribution files', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
-    expect(pkg.version).toBe('1.2.0');
+    expect(pkg.version).toBe('1.3.0');
     expect(pkg.engines.node).toBe('>=20.19.0');
     expect(pkg.files).toEqual([
       'lnurl_auth.js',
       'lib/',
       'mcp/server.js',
-      'mcp/package.json',
       'SKILL.md',
       'README.md',
       'LICENSE',

@@ -1,6 +1,6 @@
 # Publicacion pendiente - `lnurl-auth` (LUD-04)
 
-Actualizado: 2026-08-06
+Actualizado: 2026-08-19
 
 ## Alcance
 
@@ -16,9 +16,9 @@ contribuciones en cada plataforma y verificar la indexacion remota.
 ## Cambios realizados
 
 - `package.json` ahora tiene `files`, `engines.node` (`>=20.19.0`) y version
-  `1.2.0`.
+  `1.3.0`.
 - `package-lock.json`, MCP, plugins y frontmatter usan la misma version
-  `1.2.0`.
+  `1.3.0`.
 - `skills.sh.json` usa el schema actual de skills.sh (`groupings`, no el
   formato obsoleto `skills: [...]`).
 - `skills/lnurl-auth/` es un bundle autonomo para OpenClaw/ClawHub, con
@@ -30,26 +30,26 @@ contribuciones en cada plataforma y verificar la indexacion remota.
 - README, AGENTS y ejemplos ya describen callback GET, no POST, y el requisito
   real de Node.js.
 - CI valida sintaxis del bundle, `npm pack --dry-run` y la suite completa.
-- El runtime MCP tiene overrides para `fast-uri` y `hono`, y su lockfile usa
-  versiones sin advisories conocidas.
-- La suite local termina en `161 tests passed`.
+- El runtime MCP es un servidor stdio autosuficiente (`mcp/server.js`) sin
+  dependencias npm: JSON-RPC 2.0 minimo conforme al protocolo MCP, usa la
+  misma `lib/` vendored que el CLI. Arranca desde un clon limpio sin
+  `npm install`.
+- La suite local termina en `164 tests passed`.
 
 ## Evidencia ejecutada
 
 | Verificacion | Resultado |
 |---|---|
 | `npm ci` | OK |
-| `npm ci --prefix mcp` | OK |
 | `npm audit --omit=dev --json` | OK - 0 vulnerabilidades runtime |
-| `npm audit --prefix mcp --omit=dev --json` | OK - 0 vulnerabilidades runtime |
-| `npm test` | OK - 10 archivos, 161 tests |
-| `npm pack --dry-run --json` | OK - `lnurl-auth@1.2.0`, 11 archivos intencionados |
+| `npm test` | OK - 10 archivos, 164 tests |
+| `npm pack --dry-run --json` | OK - `lnurl-auth@1.3.0`, 10 archivos intencionados |
 | `node --check` sobre CLI, handshake, MCP y helper portable | OK |
 | `git diff --check` | OK |
 | `openclaw/agent-skills/scripts/validate-skills` en checkout temporal oficial | OK - 9 skills |
 | `scripts/validate-skills.test.py` en checkout temporal oficial | OK - 9 tests |
 | `npx skills@latest add . --list` | OK - descubre 1 skill: `lnurl-auth` |
-| `clawhub skill publish ./skills/lnurl-auth ... --dry-run --json` | OK - `would-publish`, version `1.2.0`, 2 archivos |
+| `clawhub skill publish ./skills/lnurl-auth ... --dry-run --json` | OK - `would-publish`, version `1.3.0`, 2 archivos |
 | `claude plugin validate . --strict` | No ejecutable en este entorno: el binario nativo de Claude Code no esta instalado |
 
 El ultimo punto no es un gap del proyecto. Antes del envio a Claude Community,
@@ -170,9 +170,9 @@ Fuentes consultadas:
 
 | Requisito | Estado | Evidencia |
 |---|---|---|
-| `.claude-plugin/plugin.json` | LISTO | Metadata, version `1.2.0`, MIT y MCP server |
+| `.claude-plugin/plugin.json` | LISTO | Metadata, version `1.3.0`, MIT y MCP server |
 | Skill compatible | LISTO | `SKILL.md` en la raiz con frontmatter valido |
-| `.mcp.json` | LISTO | Servidor stdio `node mcp/server.js` |
+| `.mcp.json` | LISTO | Servidor stdio `node mcp/server.js`, sin dependencias npm |
 | MCP server funcional | LISTO | Tests MCP y roundtrip local |
 | Manifests Codex/Cursor | LISTO | `.codex-plugin/` y `.cursor-plugin/` |
 | Validacion estricta del CLI | EJECUTAR MANUALMENTE | El binario nativo de Claude Code no esta instalado en este entorno |
@@ -222,15 +222,16 @@ Fuentes consultadas:
 | `files` restrictivo | LISTO | 7 entradas intencionadas |
 | Shebang ejecutable | LISTO | `lnurl_auth.js` mode `755` |
 | README y LICENSE | LISTO | Incluidos automaticamente y confirmados en pack |
-| Version sincronizada | LISTO | `1.2.0` en package, lock, plugins, MCP y skills |
+| Version sincronizada | LISTO | `1.3.0` en package, lock, plugins, MCP y skills |
 | Paquete construible | LISTO | `npm pack --dry-run`: 11 archivos, sin tests ni docs internos |
 | Cuenta/login de npm | PENDIENTE EXTERNO | No se ejecuto `npm login` |
 | Publicacion en registry | PENDIENTE EXTERNO | `npm view lnurl-auth` devuelve 404 porque aun no se publico |
 
 ### Contenido del paquete
 
-El artefacto npm incluye `lnurl_auth.js`, `lib/`, el entrypoint MCP y su
-`mcp/package.json`, `SKILL.md`, README y LICENSE. Excluye deliberadamente
+El artefacto npm incluye `lnurl_auth.js`, `lib/` y el entrypoint MCP
+`mcp/server.js` (autosuficiente, sin dependencias npm), `SKILL.md`, README y
+LICENSE. Excluye deliberadamente
 tests, CI, `PUBLISHING.md`, `AGENTS.md`, manifests de marketplaces y el bundle
 de contribucion `skills/`; esos artefactos se distribuyen desde GitHub en sus
 plataformas correspondientes.
@@ -241,7 +242,7 @@ plataformas correspondientes.
 npm login
 npm publish
 npm view lnurl-auth version
-npm install -g lnurl-auth@1.2.0
+npm install -g lnurl-auth@1.3.0
 lnurl-auth --help
 ```
 
@@ -281,7 +282,7 @@ prueba de runtime. Eso no es necesario para publicar este skill de ClawHub.
 | Archivos de soporte regulares | LISTO | `scripts/lnurl_auth.js` |
 | Metadata runtime de OpenClaw | LISTO | `metadata.openclaw.requires.bins` y `envVars` |
 | Bundle menor a los limites | LISTO | 2 archivos en dry-run |
-| Preflight CLI | LISTO | `would-publish`, version `1.2.0`, sin token |
+| Preflight CLI | LISTO | `would-publish`, version `1.3.0`, sin token |
 | Cuenta/login ClawHub | PENDIENTE EXTERNO | No se ejecuto `clawhub login` |
 | Publicacion y scan remoto | PENDIENTE EXTERNO | No se hizo upload |
 
@@ -293,7 +294,7 @@ Este comando ya se ejecuto y no publica nada:
 npx --yes clawhub skill publish ./skills/lnurl-auth \
   --slug lnurl-auth \
   --name "LNURL Auth" \
-  --version 1.2.0 \
+  --version 1.3.0 \
   --categories security \
   --topics lightning,lnurl,authentication \
   --dry-run --json
@@ -308,7 +309,7 @@ clawhub whoami
 clawhub skill publish ./skills/lnurl-auth \
   --slug lnurl-auth \
   --name "LNURL Auth" \
-  --version 1.2.0 \
+  --version 1.3.0 \
   --categories security \
   --topics lightning,lnurl,authentication
 ```
@@ -332,7 +333,7 @@ openclaw skills verify @<publisher>/lnurl-auth --card
 - [x] Paquete npm limitado, versionado y packable.
 - [x] Skill ClawHub con preflight `--dry-run` exitoso.
 - [x] Documentacion y ejemplos alineados con LUD-04 GET.
-- [x] CI y 161 tests locales.
+- [x] CI y 164 tests locales.
 
 ### Acciones externas que quedan para el mantenedor
 

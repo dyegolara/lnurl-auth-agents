@@ -9,9 +9,14 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
-      - run: npm ci --prefix mcp
       - run: npm audit --omit=dev
-      - run: npm audit --prefix mcp --omit=dev
       - run: node --check skills/lnurl-auth/scripts/lnurl_auth.js
+      - run: node --check mcp/server.js
+      - name: Boot MCP server from clean checkout (no install)
+        run: |
+          printf '%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"1"}}}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
+            | node mcp/server.js | grep -q '"name":"lnurl_auth"'
       - run: npm pack --dry-run
       - run: npm test

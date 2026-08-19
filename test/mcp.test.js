@@ -76,7 +76,7 @@ describe('MCP server', () => {
         params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'test', version: '1.0' } },
       });
       expect(resp.result.serverInfo.name).toBe('lnurl-auth');
-      expect(resp.result.serverInfo.version).toBe('1.2.0');
+      expect(resp.result.serverInfo.version).toBe('1.3.0');
       expect(resp.result.capabilities.tools.listChanged).toBe(true);
     } finally {
       child.kill();
@@ -220,6 +220,70 @@ describe('MCP server', () => {
       const rA = JSON.parse(a.result.content[0].text);
       const rB = JSON.parse(b.result.content[0].text);
       expect(rA.linkingPubkey).toBe(rB.linkingPubkey);
+    } finally {
+      child.kill();
+    }
+  });
+});
+
+describe('protocol conformance (zero-dependency server)', () => {
+  it('responds to JSON-RPC batch requests as an array', async () => {
+    const { child } = spawnMCP();
+    try {
+      const batch = await new Promise((resolve) => {
+        child.stdout.on('data', (d) => {
+          try {
+            const parsed = JSON.parse(d.toString().trim());
+            if (Array.isArray(parsed) && parsed.length === 2) resolve(parsed);
+          } catch (e) { /* partial line */ }
+        });
+        child.stdin.write(JSON.stringify([
+          { jsonrpc: '2.0', id: 1, method: 'ping', params: {} },
+          {
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'initialize',
+            params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'test', version: '1.0' } },
+          },
+        ]) + '\n');
+      });
+      expect(batch.map((r) => r.id)).toEqual([1, 2]);
+      expect(batch[0].result).toEqual({});
+      expect(batch[1].result.serverInfo.name).toBe('lnurl-auth');
+    } finally {
+      child.kill();
+    }
+  });
+
+  it('ignores notifications without id', async () => {
+    const { child } = spawnMCP();
+    try {
+      child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n');
+      child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/cancelled', params: { requestId: 1 } }) + '\n');
+
+      const resp = await sendRequest(child, {
+        jsonrpc: '2.0',
+        id: 7,
+        method: 'tools/list',
+        params: {},
+      });
+      expect(resp.id).toBe(7);
+      expect(resp.result.tools).toHaveLength(1);
+    } finally {
+      child.kill();
+    }
+  });
+
+  it('falls back to 2024-11-05 for unsupported protocol versions', async () => {
+    const { child } = spawnMCP();
+    try {
+      const resp = await sendRequest(child, {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'initialize',
+        params: { protocolVersion: '2049-01-01', capabilities: {}, clientInfo: { name: 'test', version: '1.0' } },
+      });
+      expect(resp.result.protocolVersion).toBe('2024-11-05');
     } finally {
       child.kill();
     }

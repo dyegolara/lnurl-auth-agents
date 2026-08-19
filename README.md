@@ -182,10 +182,15 @@ cp -r lib/ .github/skills/lnurl-auth/
 ### MCP (Model Context Protocol)
 
 For maximum compatibility with any MCP-capable agent (Claude Desktop, Cursor,
-Continue, Cody, Zed, and many more):
+Continue, Cody, Zed, and many more).
+
+The MCP server is **self-contained**: a single `node mcp/server.js` file with
+zero npm dependencies (the crypto libs under `lib/` are vendored). No install
+step needed — the server boots straight from a fresh clone, exactly like the
+CLI.
 
 ```bash
-cd mcp && npm install
+node mcp/server.js
 ```
 
 **Standalone** — add to your MCP client config (e.g. `claude_desktop_config.json`):
